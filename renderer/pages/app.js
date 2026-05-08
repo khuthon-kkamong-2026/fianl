@@ -336,12 +336,31 @@ async function runSpotifyDiscovery(id, secret) {
     </div>`
 
   const result = await api.spotifyDiscover(id, secret)
+  console.log('[Spotify discover] ok=', result.ok, 'items=', result.items?.length, 'sample=', result.items?.[0])
   if (!result.ok) {
     guideContent.innerHTML = `
       <div style="padding:24px;color:#fff">
         <p style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ 연결 실패</p>
         <p style="font-size:0.85em;color:#aaa;margin-bottom:12px">${result.error}</p>
         <button id="link-sp-reset" style="background:none;border:none;color:#1DB954;font-size:0.85em;cursor:pointer">🔑 다시 입력하기</button>
+      </div>`
+    document.getElementById('link-sp-reset')?.addEventListener('click', () => {
+      localStorage.removeItem('sp_client_id')
+      localStorage.removeItem('sp_client_secret')
+      showScreen('home')
+      credForm?.classList.remove('hidden')
+    })
+    return
+  }
+
+  // 토큰은 정상이지만 결과가 빔 → 권한/레이트리밋/API 변경 등
+  if (!result.items || result.items.length === 0) {
+    guideContent.innerHTML = `
+      <div style="padding:24px;color:#fff">
+        <p style="color:#ff9933;font-weight:700;margin-bottom:8px">⚠️ 결과가 비어있어요</p>
+        <p style="font-size:0.85em;color:#aaa;margin-bottom:6px">Spotify API에서 트랙·앨범을 한 건도 받지 못했어요.</p>
+        <p style="font-size:0.78em;color:#777;margin-bottom:12px">DevTools(Ctrl+Shift+I) 콘솔의 <code>[Spotify discover]</code> 로그를 확인하면 원인을 좁힐 수 있어요. 자격증명이 잘못되었거나 일시적인 레이트리밋일 수 있습니다.</p>
+        <button id="link-sp-reset" style="background:none;border:none;color:#1DB954;font-size:0.85em;cursor:pointer">🔑 자격증명 다시 입력</button>
       </div>`
     document.getElementById('link-sp-reset')?.addEventListener('click', () => {
       localStorage.removeItem('sp_client_id')
@@ -640,8 +659,16 @@ function setupTinderCards(siteUrl) {
     let openUrl = null
     if (dir === 'right') {
       console.log('[♥] item:', { title: item?.title, previewUrl: item?.previewUrl, url: item?.url })
-      if (item?.previewUrl) playPreview(item.previewUrl)
-      else if (item?.url)   openUrl = item.url
+      if (item?.previewUrl) {
+        playPreview(item.previewUrl)
+      } else if (item?.url) {
+        openUrl = item.url
+      } else if (item?.title) {
+        // DOM 추출 카드처럼 미리듣기/링크 둘 다 없을 때
+        // → YouTube 검색 결과 페이지로 폴백 (로그인 없이 첫 결과 클릭하면 재생됨)
+        const q = [item.title, item.subtitle].filter(Boolean).join(' ')
+        openUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q)
+      }
     }
 
     setTimeout(async () => {

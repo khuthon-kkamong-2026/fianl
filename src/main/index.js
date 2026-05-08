@@ -230,6 +230,7 @@ ipcMain.handle('browser:injectHighlight', async (_, { selectors }) => {
 ipcMain.handle('spotify:discover', async (event, { clientId, clientSecret }) => {
   try {
     const rawItems = await spotifyApi.discover(clientId, clientSecret)
+    console.log('[Spotify] discover →', rawItems.length, '개')
     // 하트(바로가기) 클릭 시 BrowserView로 열 수 있도록 externalUrl 부여
     const items = rawItems.map(it => ({
       ...it,
@@ -239,7 +240,7 @@ ipcMain.handle('spotify:discover', async (event, { clientId, clientSecret }) => 
     }))
     return { ok: true, items }
   } catch (err) {
-    console.error('[Spotify]', err.message)
+    console.error('[Spotify] discover 실패:', err.message)
     return { ok: false, error: err.message }
   }
 })
