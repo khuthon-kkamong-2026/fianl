@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <title>SlowBro</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 상단 네비게이션 바 -->
+    <header class="topbar">
+      <div class="topbar-logo">
+        <span id="logo-text">🐢 SlowBro</span>
+        <span id="logo-sb-badge" class="sb-badge hidden">🐢 SlowBro 모드</span>
+      </div>
+
+      <!-- 모드 토글 -->
+      <div class="mode-toggle">
+        <button id="btn-mode-slow"  class="mode-btn mode-btn--active">🐢 SlowBro</button>
+        <button id="btn-mode-orig"  class="mode-btn">🌐 원본 보기</button>
+      </div>
+
+      <div class="topbar-url-area">
+        <input
+          id="url-input"
+          class="url-input"
+          type="text"
+          placeholder="mock://giants/baseball  |  mock://korail/ktx  |  https://..."
+          spellcheck="false"
+        />
+        <button id="btn-go" class="btn-go">이동</button>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-tts-toggle" class="btn-icon" title="음성 안내 켜기/끄기">🔊</button>
+        <button id="btn-font-up"   class="btn-icon" title="글씨 크게">가↑</button>
+        <button id="btn-font-down" class="btn-icon" title="글씨 작게">가↓</button>
+      </div>
+    </header>
+
+    <!-- 원본 브라우저 네비게이션 바 (원본 모드일 때만 표시) -->
+    <div id="browser-navbar" class="browser-navbar hidden">
+      <button id="bv-back"    class="bv-btn" title="뒤로">←</button>
+      <button id="bv-forward" class="bv-btn" title="앞으로">→</button>
+      <button id="bv-reload"  class="bv-btn" title="새로고침">↻</button>
+      <div class="bv-url-display" id="bv-url-display">주소를 입력하세요</div>
+      <div class="bv-loading" id="bv-loading"></div>
+    </div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main id="content-area">
+      <!-- 홈 화면 -->
+      <section id="home-screen" class="home-screen">
+        <h1 class="home-title">천천히 해도 괜찮아요 🌿</h1>
+        <p class="home-desc">아래 버튼을 누르면 예매를 도와드릴게요</p>
+        <div class="quick-btns">
+          <button class="quick-btn quick-btn--baseball" data-url="mock://giants/baseball">
+            <span class="quick-icon">⚾</span>
+            <span class="quick-label">롯데 야구 예매</span>
+          </button>
+          <button class="quick-btn quick-btn--baseball" data-url="mock://interpark/baseball">
+            <span class="quick-icon">🎫</span>
+            <span class="quick-label">인터파크 예매</span>
+          </button>
+          <button class="quick-btn quick-btn--ktx" data-url="mock://korail/ktx">
+            <span class="quick-icon">🚄</span>
+            <span class="quick-label">기차표 예매</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 단계별 가이드 화면 (동적으로 렌더링) -->
+      <section id="guide-screen" class="guide-screen hidden">
+        <div id="guide-content"></div>
+      </section>
+
+      <!-- 완료 화면 -->
+      <section id="done-screen" class="done-screen hidden">
+        <div class="done-icon">✅</div>
+        <h2 class="done-title">예매가 완료됐어요!</h2>
+        <p class="done-desc">잠시 후 확인 문자가 올 거예요</p>
+        <button id="btn-home" class="btn-large btn-primary">처음 화면으로</button>
+      </section>
+    </main>
+
+    <!-- 하단 고정 버튼 -->
+    <footer class="bottom-bar" id="bottom-bar">
+      <button id="btn-back"  class="bottom-btn">← 뒤로</button>
+      <button id="btn-reset" class="bottom-btn">🏠 처음으로</button>
+      <button id="btn-help"  class="bottom-btn bottom-btn--help">도움 요청</button>
+    </footer>
+  </div>
+
+  <script src="pages/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,575 @@
+/* ─── 기본 리셋 ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* 색상 — 눈 피로 최소화 */
+  --bg:          #FAFAF8;
+  --bg2:         #F0EFE9;
+  --bg3:         #E5E3DC;
+  --text:        #1C1C1A;
+  --text-sub:    #5A5A55;
+  --text-hint:   #8A8A84;
+  --primary:     #3B5AC6;
+  --primary-bg:  #EEF1FB;
+  --success:     #1D7A4A;
+  --success-bg:  #E8F5EE;
+  --warn:        #B85C00;
+  --warn-bg:     #FEF3E2;
+  --border:      rgba(0,0,0,0.1);
+  --radius:      12px;
+  --radius-lg:   18px;
+  --shadow:      0 2px 8px rgba(0,0,0,0.07);
+}
+
+body {
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 18px;          /* 기본 크기 크게 */
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 글씨 크기 단계 */
+body.font-xl  { font-size: 22px; }
+body.font-xxl { font-size: 26px; }
+
+/* ─── 사이트 테마 — 원본 사이트 디자인 계승 ────────────────────────────────── */
+:root {
+  --site-primary:  #3B5AC6;   /* 기본값: SlowBro 블루 */
+  --site-accent:   #3B5AC6;
+  --site-bg:       #FAFAF8;
+}
+
+body.site-themed {
+  background: var(--site-bg);
+}
+
+/* 테마가 적용된 상단 바 */
+body.site-themed .topbar {
+  background: var(--site-primary);
+  border-bottom-color: var(--site-accent);
+}
+body.site-themed .topbar-logo { color: white; }
+body.site-themed .url-input   { border-color: rgba(255,255,255,0.3); color: #333; }
+body.site-themed .url-input:focus { border-color: var(--site-accent); }
+body.site-themed .btn-go      { background: var(--site-accent); }
+body.site-themed .btn-icon    { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); color: white; }
+body.site-themed .btn-icon:hover { background: rgba(255,255,255,0.22); }
+body.site-themed .mode-toggle { background: rgba(255,255,255,0.15); }
+body.site-themed .mode-btn    { color: rgba(255,255,255,0.65); }
+body.site-themed .mode-btn:hover { color: white; }
+body.site-themed .mode-btn--active,
+body.site-themed .mode-btn--orig-active {
+  background: rgba(255,255,255,0.22);
+  color: white;
+  box-shadow: none;
+}
+
+/* SlowBro 뱃지 (테마 모드에서 원본 로고 옆에 표시) */
+.sb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* 스텝 카드 — 상단에 사이트 색 헤더 바 */
+.step-card-header {
+  background: var(--site-primary);
+  color: white;
+  margin: -28px -28px 24px;
+  padding: 16px 28px;
+  border-radius: 16px 16px 0 0;
+}
+.step-card-header .step-num-tag {
+  font-size: 0.7em;
+  opacity: 0.65;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+.step-card-header .step-title {
+  font-size: 1.2em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 테마 모드: 선택 버튼 컬러 오버라이드 */
+body.site-themed .option-btn:hover {
+  border-color: var(--site-primary);
+  background: color-mix(in srgb, var(--site-primary) 8%, white);
+}
+body.site-themed .option-btn.selected {
+  border-color: var(--site-primary);
+  background: color-mix(in srgb, var(--site-primary) 10%, white);
+  color: var(--site-primary);
+}
+body.site-themed .btn-next    { background: var(--site-accent); }
+body.site-themed .btn-submit  { background: var(--site-accent); }
+body.site-themed .progress-dot.active { background: var(--site-accent); }
+body.site-themed .progress-dot.done   { background: var(--site-primary); }
+body.site-themed .counter-value       { color: var(--site-primary); }
+body.site-themed .counter-btn:hover   { border-color: var(--site-primary); }
+
+/* 하단 바도 테마에 맞게 */
+body.site-themed .bottom-bar {
+  background: color-mix(in srgb, var(--site-primary) 6%, white);
+  border-top-color: color-mix(in srgb, var(--site-primary) 20%, transparent);
+}
+
+/* ─── 모드 토글 ──────────────────────────────────────────────────────────────── */
+.mode-toggle {
+  display: flex;
+  background: var(--bg3);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+.mode-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-sub);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.mode-btn:hover { color: var(--text); }
+.mode-btn--active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.mode-btn--orig-active {
+  background: white;
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+/* ─── 원본 브라우저 네비게이션 바 ────────────────────────────────────────────── */
+.browser-navbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f8f8f6;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+.bv-btn {
+  width: 32px; height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s;
+  flex-shrink: 0;
+}
+.bv-btn:hover { background: var(--bg3); }
+.bv-btn:disabled { opacity: 0.35; cursor: default; }
+.bv-url-display {
+  flex: 1;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bv-loading {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: none;
+}
+.bv-loading.spin {
+  display: block;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 원본 모드일 때 SlowBro 콘텐츠 숨기기 — BrowserView가 그 자리를 채움 */
+#app.browser-mode #content-area { display: none; }
+#app.browser-mode .bottom-bar   { display: none; }
+
+/* ─── 상단 네비게이션 ────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;    /* 창 드래그 가능 */
+  flex-shrink: 0;
+}
+
+.topbar-logo {
+  font-size: 18px;
+  font-weight: 600;
+  -webkit-app-region: no-drag;
+  min-width: 100px;
+}
+
+.topbar-url-area {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.url-input {
+  flex: 1;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: white;
+  font-size: 14px;
+  color: var(--text-sub);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.url-input:focus { border-color: var(--primary); }
+
+.btn-go {
+  height: 38px;
+  padding: 0 18px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-go:hover { opacity: 0.85; }
+
+.topbar-actions {
+  display: flex;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.btn-icon {
+  height: 36px;
+  padding: 0 10px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-icon:hover { background: var(--bg3); }
+
+/* ─── 메인 콘텐츠 ────────────────────────────────────────────────────────────── */
+#content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 24px;
+}
+
+.hidden { display: none !important; }
+
+/* ─── 홈 화면 ────────────────────────────────────────────────────────────────── */
+.home-screen { text-align: center; padding-top: 60px; }
+
+.home-title {
+  font-size: 2em;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.home-desc {
+  font-size: 1.1em;
+  color: var(--text-sub);
+  margin-bottom: 48px;
+}
+
+.quick-btns {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 180px;
+  padding: 32px 20px;
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: var(--shadow);
+}
+
+.quick-btn:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(59,90,198,0.15);
+}
+
+.quick-btn:active { transform: scale(0.97); }
+
+.quick-icon { font-size: 3em; }
+.quick-label { font-size: 1.05em; font-weight: 600; color: var(--text); }
+
+/* ─── 가이드 화면 ────────────────────────────────────────────────────────────── */
+.guide-screen { max-width: 640px; margin: 0 auto; }
+
+/* 진행 표시 */
+.progress-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  justify-content: center;
+}
+
+.progress-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--bg3);
+  transition: background 0.3s;
+}
+.progress-dot.active  { background: var(--primary); }
+.progress-dot.done    { background: var(--success); }
+
+/* 스텝 카드 */
+.step-card {
+  background: white;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  box-shadow: var(--shadow);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.step-hint {
+  font-size: 0.9em;
+  color: var(--text-hint);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* 선택 옵션 버튼들 */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.option-btn {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+  font-size: 1em;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  line-height: 1.4;
+}
+
+.option-btn:hover   { border-color: var(--primary); background: var(--primary-bg); }
+.option-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary-bg);
+  color: var(--primary);
+}
+
+/* 카운터 */
+.counter-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.counter-btn {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: white;
+  font-size: 1.5em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s;
+}
+.counter-btn:hover { border-color: var(--primary); }
+
+.counter-value {
+  font-size: 2em;
+  font-weight: 700;
+  min-width: 40px;
+  text-align: center;
+  color: var(--primary);
+}
+
+/* 다음 버튼 */
+.btn-next {
+  width: 100%;
+  margin-top: 24px;
+  padding: 18px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.1em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  letter-spacing: 0.02em;
+}
+.btn-next:hover   { opacity: 0.88; }
+.btn-next:active  { transform: scale(0.98); }
+.btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* 최종 확인 카드 */
+.confirm-list { list-style: none; margin-bottom: 20px; }
+.confirm-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 1em;
+}
+.confirm-list li:last-child { border-bottom: none; }
+.confirm-list .confirm-key   { color: var(--text-sub); }
+.confirm-list .confirm-value { font-weight: 600; }
+
+.btn-submit {
+  width: 100%;
+  padding: 20px;
+  background: var(--success);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.2em;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-submit:hover { opacity: 0.88; }
+
+/* 경고 배지 */
+.guard-warning {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--warn-bg);
+  border: 1px solid rgba(184,92,0,0.2);
+  border-radius: var(--radius);
+  font-size: 0.9em;
+  color: var(--warn);
+  display: none;
+}
+.guard-warning.show { display: block; }
+
+/* ─── 완료 화면 ─────────────────────────────────────────────────────────────── */
+.done-screen { text-align: center; padding-top: 80px; }
+.done-icon   { font-size: 5em; margin-bottom: 20px; }
+.done-title  { font-size: 1.6em; font-weight: 700; margin-bottom: 12px; }
+.done-desc   { font-size: 1em; color: var(--text-sub); margin-bottom: 40px; }
+
+.btn-large {
+  padding: 18px 40px;
+  border-radius: var(--radius);
+  font-size: 1.1em;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { opacity: 0.85; }
+
+/* ─── 하단 고정 바 ───────────────────────────────────────────────────────────── */
+.bottom-bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.bottom-btn {
+  flex: 1;
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: var(--text);
+}
+.bottom-btn:hover { background: var(--bg3); }
+.bottom-btn--help {
+  background: var(--warn-bg);
+  border-color: rgba(184,92,0,0.25);
+  color: var(--warn);
+}
+.bottom-btn--help:hover { background: #fde8c8; }
+
+/* ─── 로딩 스피너 ────────────────────────────────────────────────────────────── */
+.loading-wrap {
+  text-align: center;
+  padding: 60px 20px;
+}
+.loading-text {
+  font-size: 1.1em;
+  color: var(--text-sub);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

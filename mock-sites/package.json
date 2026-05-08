@@ -1,0 +1,12 @@
+{
+  "name": "slowbro-netflix-demo",
+  "version": "1.0.0",
+  "description": "SlowBro demo: Netflix-style page with random layout mode",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^30.0.0"
+  }
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "SB-MOWYQLC3",
+    "user": "SlowBro 사용자",
+    "date": "5월 31일",
+    "grade": "1루 지정석",
+    "count": "2",
+    "bookedAt": "2026-05-08T13:40:51.459Z",
+    "status": "예매완료"
+  },
+  {
+    "id": "SB-MOWFMP39",
+    "user": "SlowBro 사용자",
+    "date": "5월 24일",
+    "grade": "1루 지정석",
+    "count": "2",
+    "bookedAt": "2026-05-08T04:45:56.997Z",
+    "status": "예매완료"
+  },
+  {
+    "id": "SB-MOWF4Y26",
+    "date": "5월 24일",
+    "grade": "1루 지정석",
+    "count": "2",
+    "bookedAt": "2026-05-08T04:32:08.814Z",
+    "status": "예매완료"
+  }
+]

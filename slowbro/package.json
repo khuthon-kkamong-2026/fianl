@@ -1,0 +1,28 @@
+{
+  "name": "slowbro",
+  "version": "0.1.0",
+  "description": "디지털 완충 브라우저 — 고령층을 위한 속도 격차 해소",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.slowbro.browser",
+    "productName": "SlowBro",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

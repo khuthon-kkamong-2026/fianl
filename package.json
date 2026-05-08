@@ -1,0 +1,31 @@
+{
+  "name": "chazeullajueo",
+  "version": "0.1.0",
+  "description": "알고리즘 무력화 브라우저 — 추천 알고리즘을 끄고 진짜를 발견하세요",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "demo-server": "node demo-server.js",
+    "culture-server": "node demo-culture-server.js"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "undici": "^5.28.5"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.slowbro.browser",
+    "productName": "찾으라우저",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    }
+  }
+}

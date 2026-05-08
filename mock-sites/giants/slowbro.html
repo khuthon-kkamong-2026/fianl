@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlowBro — 티켓 예매</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #FAFAF8;
+      --bg2:       #F0EFE9;
+      --bg3:       #E5E3DC;
+      --text:      #1C1C1A;
+      --sub:       #5A5A55;
+      --hint:      #8A8A84;
+      --primary:   #3B5AC6;
+      --pri-bg:    #EEF1FB;
+      --success:   #1D7A4A;
+      --suc-bg:    #E8F5EE;
+      --warn:      #B85C00;
+      --warn-bg:   #FEF3E2;
+      --border:    rgba(0,0,0,0.10);
+      --r:         14px;
+      --r-lg:      20px;
+      --shadow:    0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1.7;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── 헤더 ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      background: var(--bg2);
+      border-bottom: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logo-turtle { font-size: 26px; }
+
+    .topbar-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+    .icon-btn {
+      padding: 8px 14px;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+    .icon-btn:hover { background: var(--bg3); }
+    .icon-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* ── 콘텐츠 ── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 36px 24px;
+      max-width: 680px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── 홈 화면 ── */
+    #home {
+      text-align: center;
+      padding-top: 40px;
+    }
+    .home-greeting {
+      font-size: 1.6em;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .home-sub {
+      font-size: 1em;
+      color: var(--sub);
+      margin-bottom: 48px;
+    }
+    .big-btn {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto 18px;
+      padding: 26px 28px;
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--r-lg);
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+      text-align: left;
+    }
+    .big-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(59,90,198,0.14);
+    }
+    .big-btn-icon { font-size: 2.4em; }
+    .big-btn-text { }
+    .big-btn-title { font-size: 1.1em; font-weight: 700; }
+    .big-btn-desc { font-size: 0.8em; color: var(--sub); margin-top: 3px; }
+
+    /* ── 진행 표시 ── */
+    .progress-bar {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+    .p-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: var(--bg3);
+      transition: background 0.3s, transform 0.2s;
+    }
+    .p-dot.done    { background: var(--success); }
+    .p-dot.current { background: var(--primary); transform: scale(1.3); }
+
+    /* ── 스텝 카드 ── */
+    .step-card {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 32px;
+      box-shadow: var(--shadow);
+      animation: fadeUp 0.3s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-num-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .step-title {
+      font-size: 1.3em;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .step-hint {
+      font-size: 0.85em;
+      color: var(--hint);
+      margin-bottom: 28px;
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .step-hint::before { content: '💡'; flex-shrink: 0; }
+
+    /* ── 선택 버튼 ── */
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .opt {
+      padding: 18px 22px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: var(--r);
+      text-align: left;
+      font-size: 1em;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.1s;
+      line-height: 1.5;
+      font-family: inherit;
+    }
+    .opt:hover   { border-color: var(--primary); background: var(--pri-bg); }
+    .opt.picked  { border-color: var(--primary); background: var(--pri-bg); color: var(--primary); }
+    .opt .opt-sub { font-size: 0.8em; font-weight: 400; color: var(--hint); display: block; margin-top: 2px; }
+    .opt.picked .opt-sub { color: var(--primary); opacity: 0.7; }
+
+    /* ── 카운터 ── */
+    .counter-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 12px 0;
+    }
+    .cnt-btn {
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: white;
+      font-size: 1.8em;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color 0.15s, background 0.15s;
+      font-family: inherit;
+      color: var(--text);
+    }
+    .cnt-btn:hover { border-color: var(--primary); background: var(--pri-bg); }
+    .cnt-val {
+      font-size: 2.2em;
+      font-weight: 800;
+      color: var(--primary);
+      min-width: 50px;
+      text-align: center;
+    }
+    .cnt-label { font-size: 0.85em; color: var(--hint); }
+
+    /* ── 다음 버튼 ── */
+    .btn-next {
+      width: 100%;
+      margin-top: 28px;
+      padding: 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      font-size: 1.1em;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, transform 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .btn-next:hover { opacity: 0.88; }
+    .btn-next:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── 확인 목록 ── */
+    .confirm-list { list-style: none; margin-bottom: 24px; }
+    .confirm-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 1em;
+    }
+    .confirm-list li:last-child { border-bottom: none; }
+    .c-key { color: var(--sub); }
+    .c-val { font-weight: 700; font-size: 1.05em; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 22px;
+      background: var(--success);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      font-size: 1.15em;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s;
+    }
+    .btn-submit:hover { opacity: 0.88; }
+
+    /* ── 완료 화면 ── */
+    #done {
+      text-align: center;
+      padding-top: 60px;
+    }
+    .done-icon { font-size: 5em; margin-bottom: 20px; }
+    .done-title { font-size: 1.5em; font-weight: 700; margin-bottom: 12px; }
+    .done-desc { color: var(--sub); margin-bottom: 40px; font-size: 0.95em; }
+    .btn-restart {
+      padding: 18px 48px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      font-size: 1em;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* ── 경고 ── */
+    .warn-box {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: var(--warn-bg);
+      border: 1.5px solid rgba(184,92,0,0.2);
+      border-radius: var(--r);
+      font-size: 0.85em;
+      color: var(--warn);
+      display: none;
+    }
+    .warn-box.show { display: block; }
+
+    /* ── 푸터 ── */
+    .bottom-bar {
+      display: flex;
+      gap: 10px;
+      padding: 14px 20px;
+      background: var(--bg2);
+      border-top: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .bot-btn {
+      flex: 1;
+      padding: 14px;
+      background: white;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      font-size: 0.95em;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: background 0.15s;
+    }
+    .bot-btn:hover { background: var(--bg3); }
+    .bot-btn.help {
+      background: var(--warn-bg);
+      border-color: rgba(184,92,0,0.25);
+      color: var(--warn);
+    }
+    .bot-btn.help:hover { background: #fde8c8; }
+
+    /* ── TTS 인디케이터 ── */
+    .tts-indicator {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      background: var(--primary);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 24px;
+      font-size: 0.75em;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(59,90,198,0.35);
+      animation: slideIn 0.2s ease;
+      z-index: 100;
+    }
+    .tts-indicator.show { display: flex; }
+    @keyframes slideIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .tts-wave {
+      display: flex; gap: 2px; align-items: flex-end;
+    }
+    .tts-wave span {
+      display: block;
+      width: 3px;
+      background: white;
+      border-radius: 2px;
+      animation: wave 0.8s ease-in-out infinite;
+    }
+    .tts-wave span:nth-child(1) { height: 8px; animation-delay: 0s; }
+    .tts-wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
+    .tts-wave span:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+    .tts-wave span:nth-child(4) { height: 16px; animation-delay: 0.15s; }
+    .tts-wave span:nth-child(5) { height: 8px; animation-delay: 0.05s; }
+    @keyframes wave {
+      0%, 100% { transform: scaleY(0.5); }
+      50% { transform: scaleY(1); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="topbar">
+  <div class="logo">
+    <span class="logo-turtle">🐢</span>
+    SlowBro
+  </div>
+  <div class="topbar-actions">
+    <button class="icon-btn active" id="tts-btn" title="음성 안내">🔊</button>
+    <button class="icon-btn" id="font-up" title="글씨 크게">가↑</button>
+    <button class="icon-btn" id="font-dn" title="글씨 작게">가↓</button>
+  </div>
+</div>
+
+<!-- TTS 인디케이터 -->
+<div class="tts-indicator" id="tts-ind">
+  <div class="tts-wave">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <span id="tts-text">안내 중...</span>
+</div>
+
+<!-- 콘텐츠 -->
+<div id="content">
+
+  <!-- 홈 -->
+  <div id="home">
+    <div class="home-greeting">천천히 해도 괜찮아요 🌿</div>
+    <div class="home-sub">원하는 예매를 아래에서 골라주세요</div>
+    <button class="big-btn" onclick="startBaseball()">
+      <span class="big-btn-icon">⚾</span>
+      <span class="big-btn-text">
+        <span class="big-btn-title">야구 티켓 예매</span>
+        <span class="big-btn-desc">롯데자이언츠 홈경기</span>
+      </span>
+    </button>
+    <button class="big-btn" onclick="speak('기차표 예매는 준비 중이에요.')">
+      <span class="big-btn-icon">🚄</span>
+      <span class="big-btn-text">
+        <span class="big-btn-title">기차표 예매</span>
+        <span class="big-btn-desc">KTX · 무궁화호 · ITX</span>
+      </span>
+    </button>
+  </div>
+
+  <!-- 가이드 -->
+  <div id="guide" class="hidden">
+    <div class="progress-bar" id="prog-bar"></div>
+    <div class="step-card" id="step-card"></div>
+  </div>
+
+  <!-- 완료 -->
+  <div id="done" class="hidden">
+    <div class="done-icon">✅</div>
+    <div class="done-title">예매가 완료됐어요!</div>
+    <div class="done-desc">잠시 후 확인 문자가 올 거예요</div>
+    <button class="btn-restart" onclick="restart()">처음 화면으로</button>
+  </div>
+
+</div>
+
+<!-- 하단 바 -->
+<div class="bottom-bar">
+  <button class="bot-btn" id="btn-back">← 뒤로</button>
+  <button class="bot-btn" id="btn-home" onclick="restart()">🏠 처음으로</button>
+  <button class="bot-btn help" id="btn-help">📞 도움 요청</button>
+</div>
+
+<script>
+  // ── 상태 ──────────────────────────────────────────────────
+  const state = {
+    step: 0,
+    answers: {},
+    tts: true,
+    fontLevel: 0,
+  }
+
+  const STEPS = [
+    {
+      id: 'date',
+      title: '경기 날짜를 골라주세요',
+      hint: '원하는 날짜 버튼 하나를 누르면 돼요',
+      type: 'select',
+      options: [
+        { value: '0510', text: '5월 10일 (토)', sub: '오후 2시 · 롯데 vs LG' },
+        { value: '0511', text: '5월 11일 (일)', sub: '오후 5시 · 롯데 vs LG' },
+        { value: '0514', text: '5월 14일 (수)', sub: '오후 6시 30분 · 롯데 vs KT' },
+        { value: '0517', text: '5월 17일 (토)', sub: '오후 2시 · 롯데 vs 삼성' },
+      ]
+    },
+    {
+      id: 'grade',
+      title: '좌석을 골라주세요',
+      hint: '어느 구역에서 보고 싶으신가요?',
+      type: 'select',
+      options: [
+        { value: '1루 지정석', text: '1루 지정석', sub: '35,000원 · 여유 있음' },
+        { value: '3루 지정석', text: '3루 지정석', sub: '35,000원 · 여유 있음' },
+        { value: '외야 응원석', text: '외야 응원석', sub: '12,000원 · 응원 구역' },
+        { value: '중앙 프리미엄', text: '중앙 프리미엄', sub: '55,000원 · 최고 시야' },
+      ]
+    },
+    {
+      id: 'count',
+      title: '몇 명이 가시나요?',
+      hint: '+ 와 − 버튼으로 인원을 정해주세요',
+      type: 'counter',
+      default: 2,
+      min: 1,
+      max: 4,
+    },
+    {
+      id: 'confirm',
+      title: '내용을 확인해 주세요',
+      hint: '아래 내용이 맞으면 예매하기 버튼을 눌러주세요',
+      type: 'confirm',
+    }
+  ]
+
+  // ── 화면 전환 ──────────────────────────────────────────────
+  function show(id) {
+    ['home','guide','done'].forEach(n => {
+      document.getElementById(n).classList.toggle('hidden', n !== id)
+    })
+  }
+
+  // ── TTS ───────────────────────────────────────────────────
+  let ttsTimeout
+  function speak(text) {
+    if (!state.tts) return
+    window.speechSynthesis?.cancel()
+    const u = new SpeechSynthesisUtterance(text)
+    u.lang = 'ko-KR'; u.rate = 0.9
+    window.speechSynthesis?.speak(u)
+    // 인디케이터
+    const ind = document.getElementById('tts-ind')
+    const tl = document.getElementById('tts-text')
+    tl.textContent = text.length > 20 ? text.slice(0,20) + '…' : text
+    ind.classList.add('show')
+    clearTimeout(ttsTimeout)
+    ttsTimeout = setTimeout(() => ind.classList.remove('show'), text.length * 80 + 1000)
+  }
+
+  // ── 글씨 크기 ──────────────────────────────────────────────
+  document.getElementById('font-up').addEventListener('click', () => {
+    if (state.fontLevel < 2) {
+      state.fontLevel++
+      document.body.style.fontSize = ['20px','24px','28px'][state.fontLevel]
+      speak('글씨를 크게 했어요')
+    }
+  })
+  document.getElementById('font-dn').addEventListener('click', () => {
+    if (state.fontLevel > 0) {
+      state.fontLevel--
+      document.body.style.fontSize = ['20px','24px','28px'][state.fontLevel]
+      speak('글씨를 작게 했어요')
+    }
+  })
+  document.getElementById('tts-btn').addEventListener('click', () => {
+    state.tts = !state.tts
+    document.getElementById('tts-btn').textContent = state.tts ? '🔊' : '🔇'
+    document.getElementById('tts-btn').classList.toggle('active', state.tts)
+    if (state.tts) speak('음성 안내를 켰어요')
+  })
+
+  // ── 야구 예매 시작 ─────────────────────────────────────────
+  function startBaseball() {
+    state.step = 0
+    state.answers = {}
+    show('guide')
+    renderStep()
+    speak('야구 티켓 예매를 시작할게요. 하나씩 차근차근 안내해 드릴게요.')
+  }
+
+  // ── 스텝 렌더 ─────────────────────────────────────────────
+  function renderStep() {
+    const step = STEPS[state.step]
+
+    // 진행 점
+    const bar = document.getElementById('prog-bar')
+    bar.innerHTML = STEPS.map((_, i) => {
+      let cls = 'p-dot'
+      if (i < state.step) cls += ' done'
+      else if (i === state.step) cls += ' current'
+      return `<div class="${cls}"></div>`
+    }).join('')
+
+    const card = document.getElementById('step-card')
+
+    let body = ''
+    if (step.type === 'select') {
+      const opts = step.options.map(o =>
+        `<button class="opt${state.answers[step.id] === o.value ? ' picked' : ''}" data-val="${o.value}">
+          ${o.text}
+          ${o.sub ? `<span class="opt-sub">${o.sub}</span>` : ''}
+        </button>`
+      ).join('')
+      body = `<div class="options">${opts}</div>
+        <button class="btn-next" id="btn-next" ${state.answers[step.id] ? '' : 'disabled'}>다음으로 →</button>`
+    } else if (step.type === 'counter') {
+      const val = state.answers[step.id] ?? step.default ?? 2
+      body = `
+        <div class="counter-row">
+          <button class="cnt-btn" id="cnt-m">−</button>
+          <div>
+            <div class="cnt-val" id="cnt-v">${val}</div>
+            <div class="cnt-label">명</div>
+          </div>
+          <button class="cnt-btn" id="cnt-p">+</button>
+        </div>
+        <button class="btn-next" id="btn-next">다음으로 →</button>`
+    } else if (step.type === 'confirm') {
+      const rows = STEPS.filter(s => s.type !== 'confirm' && state.answers[s.id]).map(s =>
+        `<li><span class="c-key">${s.title.replace('를 골라주세요','').replace('이 가시나요','')}</span>
+             <span class="c-val">${state.answers[s.id]}</span></li>`
+      ).join('')
+      body = `<ul class="confirm-list">${rows}</ul>
+        <button class="btn-submit" id="btn-submit">⚾ 예매하기</button>`
+    }
+
+    card.innerHTML = `
+      <div class="step-num-badge">${state.step + 1}</div>
+      <div class="step-title">${step.title}</div>
+      <div class="step-hint">${step.hint}</div>
+      ${body}
+      <div class="warn-box" id="warn-box">⚠️ 너무 빠르게 눌렸어요. 잠깐만 기다려 주세요.</div>
+    `
+
+    attachHandlers(step)
+    speak(step.title + '. ' + step.hint)
+  }
+
+  let lastClickTime = 0
+  function isHuman() {
+    const now = Date.now()
+    if (now - lastClickTime < 250) { lastClickTime = now; return false }
+    lastClickTime = now
+    return true
+  }
+
+  function attachHandlers(step) {
+    // 옵션 클릭
+    document.querySelectorAll('.opt[data-val]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!isHuman()) {
+          document.getElementById('warn-box').classList.add('show')
+          speak('너무 빠르게 눌렸어요. 잠깐 기다려 주세요.')
+          return
+        }
+        document.getElementById('warn-box').classList.remove('show')
+        document.querySelectorAll('.opt').forEach(b => b.classList.remove('picked'))
+        btn.classList.add('picked')
+        state.answers[step.id] = btn.dataset.val
+        const nx = document.getElementById('btn-next')
+        if (nx) nx.disabled = false
+        speak(btn.dataset.val)
+      })
+    })
+
+    // 다음
+    document.getElementById('btn-next')?.addEventListener('click', () => {
+      if (step.type === 'counter') {
+        state.answers[step.id] = document.getElementById('cnt-v').textContent + '명'
+      }
+      state.step++
+      if (state.step < STEPS.length) renderStep()
+      else { show('done'); speak('예매가 완료됐어요! 잠시 후 확인 문자가 올 거예요.') }
+    })
+
+    // 카운터
+    document.getElementById('cnt-m')?.addEventListener('click', () => {
+      const v = document.getElementById('cnt-v')
+      const cur = parseInt(v.textContent)
+      if (cur > (step.min ?? 1)) { v.textContent = cur - 1; speak(cur - 1 + '명') }
+    })
+    document.getElementById('cnt-p')?.addEventListener('click', () => {
+      const v = document.getElementById('cnt-v')
+      const cur = parseInt(v.textContent)
+      if (cur < (step.max ?? 4)) { v.textContent = cur + 1; speak(cur + 1 + '명') }
+    })
+
+    // 제출
+    document.getElementById('btn-submit')?.addEventListener('click', () => {
+      show('done')
+      speak('예매가 완료됐어요! 잠시 후 확인 문자가 올 거예요.')
+    })
+  }
+
+  function restart() {
+    state.step = 0; state.answers = {}
+    show('home')
+    speak('처음 화면으로 돌아왔어요.')
+  }
+
+  // 뒤로
+  document.getElementById('btn-back').addEventListener('click', () => {
+    if (state.step > 0) { state.step--; renderStep() }
+    else restart()
+  })
+
+  document.getElementById('btn-help').addEventListener('click', () => {
+    speak('가족에게 도움을 요청할게요.')
+    alert('가족 연결 기능은 준비 중이에요.\n가까이 있는 분께 도움을 요청해보세요.')
+  })
+
+  // 초기 안내
+  setTimeout(() => speak('SlowBro에 오신 것을 환영해요. 천천히 해도 괜찮아요.'), 500)
+</script>
+</body>
+</html>

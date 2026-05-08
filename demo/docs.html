@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlowBro — 기술 문서</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #0b1e45;
+      --blue:   #3B5AC6;
+      --red:    #d4002a;
+      --green:  #1D7A4A;
+      --yellow: #b45309;
+      --purple: #6d28d9;
+      --bg:     #f4f5f7;
+      --white:  #ffffff;
+      --text:   #1a1a1a;
+      --sub:    #555;
+      --border: #e2e4e9;
+    }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ── 헤더 ── */
+    .doc-header {
+      background: var(--navy);
+      color: white;
+      padding: 40px 60px;
+    }
+    .doc-header h1 { font-size: 32px; font-weight: 900; font-style: italic; margin-bottom: 8px; }
+    .doc-header h1 span { color: #7eb3ff; }
+    .doc-header p { color: rgba(255,255,255,0.6); font-size: 14px; }
+    .version-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    /* ── 네비 ── */
+    .doc-nav {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0 60px;
+      display: flex;
+      gap: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .doc-nav a {
+      display: block;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: var(--sub);
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .doc-nav a:hover { color: var(--blue); border-color: var(--blue); }
+
+    /* ── 레이아웃 ── */
+    .doc-body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+    }
+
+    /* ── 섹션 ── */
+    .section { }
+    .section-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title .num {
+      background: var(--navy);
+      color: white;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── 테이블 ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+    }
+    thead tr { background: var(--navy); color: white; }
+    th { padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; }
+    td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbff; }
+
+    /* ── 뱃지 ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-purple { background: #ede9fe; color: #5b21b6; }
+    .badge-gray   { background: #f3f4f6; color: #374151; }
+    .badge-navy   { background: #dbeafe; color: var(--navy); }
+
+    /* ── 코드 ── */
+    code {
+      background: #f1f3f5;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'SF Mono', monospace;
+      font-size: 12px;
+      color: #c7254e;
+    }
+    pre {
+      background: #1e2535;
+      color: #e2e8f0;
+      padding: 20px 24px;
+      border-radius: 10px;
+      font-family: 'Consolas', 'SF Mono', monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      overflow-x: auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    pre .c  { color: #64748b; }
+    pre .k  { color: #93c5fd; }
+    pre .s  { color: #86efac; }
+    pre .n  { color: #fcd34d; }
+    pre .t  { color: #f9a8d4; }
+
+    /* ── 다이어그램 박스 ── */
+    .diagram {
+      background: #1e2535;
+      color: #e2e8f0;
+      padding: 28px 32px;
+      border-radius: 10px;
+      font-family: 'Consolas', 'SF Mono', monospace;
+      font-size: 13px;
+      line-height: 1.9;
+      overflow-x: auto;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .diagram .box   { color: #93c5fd; }
+    .diagram .arrow { color: #fcd34d; }
+    .diagram .label { color: #86efac; }
+    .diagram .note  { color: #64748b; }
+    .diagram .red   { color: #fca5a5; }
+    .diagram .grn   { color: #6ee7b7; }
+
+    /* ── 카드 그리드 ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .card-icon { font-size: 28px; margin-bottom: 10px; }
+    .card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+    .card-desc  { font-size: 12px; color: var(--sub); line-height: 1.6; }
+    .card-version { font-size: 11px; color: #999; margin-top: 8px; }
+
+    /* ── API 블록 ── */
+    .api-block {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .api-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #fafbff;
+    }
+    .api-method {
+      padding: 3px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+    .method-invoke { background: #dbeafe; color: #1e40af; }
+    .method-send   { background: #d1fae5; color: #065f46; }
+    .method-event  { background: #ede9fe; color: #5b21b6; }
+    .api-channel {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .api-desc { color: var(--sub); font-size: 13px; margin-left: auto; }
+    .api-body { padding: 16px 20px; }
+    .param-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .param-table th { padding: 6px 10px; background: #f8f9fc; color: #555; font-weight: 600; border-bottom: 1px solid #eee; text-align: left; }
+    .param-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+    .param-table tr:last-child td { border-bottom: none; }
+
+    /* ── 플로우 스텝 ── */
+    .flow-steps {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      flex: 1;
+      min-width: 120px;
+      background: white;
+      border: 1px solid var(--border);
+      border-right: none;
+      padding: 16px 14px;
+      text-align: center;
+      position: relative;
+    }
+    .flow-step:first-child { border-radius: 10px 0 0 10px; }
+    .flow-step:last-child  { border-radius: 0 10px 10px 0; border-right: 1px solid var(--border); }
+    .flow-step::after {
+      content: '→';
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 16px;
+      z-index: 1;
+    }
+    .flow-step:last-child::after { display: none; }
+    .flow-step-num {
+      width: 24px; height: 24px;
+      background: var(--blue);
+      color: white;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 8px;
+    }
+    .flow-step-label { font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+    .flow-step-desc  { font-size: 11px; color: var(--sub); }
+    .flow-step.accent { border-top: 3px solid var(--red); }
+    .flow-step.accent .flow-step-num { background: var(--red); }
+
+    /* ── ERD ── */
+    .erd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .erd-entity {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .erd-entity-header {
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+    .erd-fields { padding: 4px 0; }
+    .erd-field {
+      display: flex;
+      align-items: center;
+      padding: 7px 16px;
+      gap: 10px;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 12px;
+    }
+    .erd-field:last-child { border-bottom: none; }
+    .erd-field-type { font-family: monospace; color: #888; min-width: 65px; font-size: 11px; }
+    .erd-field-name { font-weight: 600; color: var(--text); }
+    .erd-field-pk   { color: #f59e0b; font-size: 10px; font-weight: 700; margin-left: auto; }
+    .erd-field-desc { color: #aaa; font-size: 11px; margin-left: auto; }
+
+    hr.section-sep { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── 관계 화살표 설명 ── */
+    .relation-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .relation-item {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rel-arrow { color: var(--blue); font-weight: 700; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="doc-header">
+  <h1>🐢 Slow<span>Bro</span></h1>
+  <p>디지털 격차는 접근의 문제가 아니라 속도의 문제다 — 고령층을 위한 접근성 브라우저</p>
+  <div class="version-badge">v0.1.0 · Electron 28 · 2026 KHU Hackathon</div>
+</div>
+
+<!-- 네비 -->
+<nav class="doc-nav">
+  <a href="#stack">Tech Stack</a>
+  <a href="#architecture">아키텍처</a>
+  <a href="#flow">시스템 플로우</a>
+  <a href="#erd">ERD</a>
+  <a href="#api">IPC API 명세</a>
+</nav>
+
+<div class="doc-body">
+
+  <!-- ① Tech Stack -->
+  <section class="section" id="stack">
+    <div class="section-title"><span class="num">1</span> Framework &amp; Tech Stack</div>
+
+    <div class="card-grid" style="margin-bottom:28px">
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Electron</div>
+        <div class="card-desc">Chromium + Node.js 기반 크로스플랫폼 데스크탑 앱. Main/Renderer 두 프로세스 구조.</div>
+        <div class="card-version">v28.0.0</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🍵</div>
+        <div class="card-title">Cheerio</div>
+        <div class="card-desc">서버사이드 HTML 파싱 라이브러리 (jQuery-like API). 실제 사이트 DOM에서 날짜·좌석 데이터 추출.</div>
+        <div class="card-version">v1.0.0-rc.12</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🗣️</div>
+        <div class="card-title">Web Speech API</div>
+        <div class="card-desc">브라우저 내장 TTS. 한국어(ko-KR) 음성으로 각 단계 안내. 0.9× 속도로 명확하게 출력.</div>
+        <div class="card-version">Browser built-in</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">BrowserView</div>
+        <div class="card-desc">Electron의 임베드 웹뷰. "원본 보기" 모드에서 실제 사이트를 SlowBro 프레임 안에 렌더링.</div>
+        <div class="card-version">Electron built-in</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎨</div>
+        <div class="card-title">Vanilla HTML/CSS/JS</div>
+        <div class="card-desc">Renderer UI는 순수 HTML+CSS. 번들러/프레임워크 없이 빠른 개발. CSS 변수로 사이트 테마 동적 적용.</div>
+        <div class="card-version">No framework</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <div class="card-title">electron-builder</div>
+        <div class="card-desc">Windows(.exe NSIS) / macOS(.dmg) 설치 파일 빌드. <code>npm run build</code></div>
+        <div class="card-version">v24.0.0</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>레이어</th><th>기술</th><th>역할</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-navy">Shell</span></td>
+          <td><strong>Electron 28</strong></td>
+          <td>앱 컨테이너, 창 관리, IPC 브릿지</td>
+          <td><code>src/main/index.js</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">Security</span></td>
+          <td><strong>contextBridge</strong></td>
+          <td>Renderer ↔ Main 사이 안전한 API 노출. Node 직접 접근 차단.</td>
+          <td><code>src/preload/index.js</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">Parsing</span></td>
+          <td><strong>Cheerio</strong></td>
+          <td>실제 사이트 HTML fetch → DOM 파싱 → 구조화된 스텝 데이터 반환</td>
+          <td><code>src/engine/pageParser.js</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-red">Guard</span></td>
+          <td><strong>In-memory Map</strong></td>
+          <td>클릭 속도 감지(250ms), 세션 중복 예매 차단</td>
+          <td><code>src/guard/antiAbuse.js</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">UI</span></td>
+          <td><strong>Vanilla JS + CSS Variables</strong></td>
+          <td>접근성 UI (20px+ 폰트, 대형 버튼). 사이트 테마를 CSS 변수로 동적 적용</td>
+          <td><code>renderer/</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">TTS</span></td>
+          <td><strong>SpeechSynthesisUtterance</strong></td>
+          <td>각 단계 라벨·힌트를 한국어 음성으로 읽어줌</td>
+          <td>Renderer, ko-KR, 0.9×</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-gray">Embed Browser</span></td>
+          <td><strong>BrowserView</strong></td>
+          <td>"원본 보기" 모드 — 실제 사이트를 완전한 Chromium으로 렌더링</td>
+          <td>Main process 관리</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ② 아키텍처 -->
+  <section class="section" id="architecture">
+    <div class="section-title"><span class="num">2</span> 아키텍처</div>
+
+    <div class="diagram">
+<span class="note">┌─────────────────────────────────────────────────────────────────────┐</span>
+<span class="note">│                        Electron Application                          │</span>
+<span class="note">│                                                                      │</span>
+<span class="note">│  ┌──────────────────────────┐  IPC   ┌───────────────────────────┐  │</span>
+<span class="note">│  │</span>    <span class="red">Renderer Process</span>       <span class="note">│◄──────►│</span>     <span class="grn">Main Process</span>          <span class="note">│  │</span>
+<span class="note">│  │                          │        │                           │  │</span>
+<span class="note">│  │</span>  <span class="label">renderer/index.html</span>    <span class="note">│</span>        <span class="note">│  ┌─────────────────────┐ │  │</span>
+<span class="note">│  │</span>  <span class="label">renderer/pages/app.js</span>  <span class="note">│</span>        <span class="note">│  │</span> <span class="label">pageParser.js</span>       <span class="note">│ │  │</span>
+<span class="note">│  │</span>  <span class="label">renderer/styles/main.css│</span>        <span class="note">│  │  Cheerio HTML 파싱  │ │  │</span>
+<span class="note">│  │                          │        │  │  사이트별 룰셋 적용  │ │  │</span>
+<span class="note">│  │</span>  <span class="arrow">window.slowbro.*</span>       <span class="note">│</span>        <span class="note">│  └─────────────────────┘ │  │</span>
+<span class="note">│  │  (contextBridge API)     │        │  ┌─────────────────────┐ │  │</span>
+<span class="note">│  │                          │        │  │</span> <span class="label">antiAbuse.js</span>        <span class="note">│ │  │</span>
+<span class="note">│  │</span>  <span class="red">No direct Node access</span>  <span class="note">│</span>        <span class="note">│  │  클릭속도 / 중복    │ │  │</span>
+<span class="note">│  └──────────────────────────┘        │  └─────────────────────┘ │  │</span>
+<span class="note">│             │                        │  ┌─────────────────────┐ │  │</span>
+<span class="note">│       Web Speech API                 │  │</span> <span class="label">BrowserView</span>         <span class="note">│ │  │</span>
+<span class="note">│       (TTS, ko-KR)                   │  │  원본 사이트 렌더링  │ │  │</span>
+<span class="note">│                                      │  └─────────────────────┘ │  │</span>
+<span class="note">│                                      └───────────────────────────┘  │</span>
+<span class="note">│                                                │                     │</span>
+<span class="note">└────────────────────────────────────────────────┼─────────────────────┘</span>
+                                                 <span class="note">│</span>
+                          <span class="arrow">http/https fetch (Cheerio용 HTML)</span>
+                             <span class="note">실제 사이트 or 로컬 mock HTML</span>
+    </div>
+
+    <br>
+    <table>
+      <thead><tr><th>파일</th><th>프로세스</th><th>책임</th></tr></thead>
+      <tbody>
+        <tr><td><code>src/main/index.js</code></td><td><span class="badge badge-green">Main</span></td><td>창 생성, IPC 핸들러 등록, BrowserView 관리, 광고 차단 세션</td></tr>
+        <tr><td><code>src/preload/index.js</code></td><td><span class="badge badge-yellow">Bridge</span></td><td>contextBridge로 <code>window.slowbro</code> API 노출. Node ↔ Renderer 보안 경계</td></tr>
+        <tr><td><code>src/engine/pageParser.js</code></td><td><span class="badge badge-green">Main</span></td><td>URL 감지 → HTML fetch → Cheerio 파싱 → 구조화된 Steps + Theme 반환</td></tr>
+        <tr><td><code>src/guard/antiAbuse.js</code></td><td><span class="badge badge-green">Main</span></td><td>클릭 속도 검사(250ms), 세션별 중복 예매 차단, 연령 인증 상태 관리</td></tr>
+        <tr><td><code>renderer/index.html</code></td><td><span class="badge badge-red">Renderer</span></td><td>UI 쉘. 홈·가이드·완료 화면 HTML 골격, 모드 토글, 네비게이션 바</td></tr>
+        <tr><td><code>renderer/pages/app.js</code></td><td><span class="badge badge-red">Renderer</span></td><td>상태 머신, 스텝 렌더링, TTS 호출, 사이트 테마 적용, BrowserView 바운드 계산</td></tr>
+        <tr><td><code>renderer/styles/main.css</code></td><td><span class="badge badge-red">Renderer</span></td><td>접근성 CSS (20px+ 폰트, 대형 버튼), CSS 변수 기반 사이트 테마 시스템</td></tr>
+        <tr><td><code>mock-sites/giants/</code></td><td><span class="badge badge-gray">Static</span></td><td>롯데자이언츠 티켓 사이트 Mock HTML (원본 복잡버전 + SlowBro 적용버전)</td></tr>
+        <tr><td><code>demo/index.html</code></td><td><span class="badge badge-gray">Static</span></td><td>Before/After 비교 데모 페이지 (iframe 분할 뷰, 드래그 리사이즈)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ③ 시스템 플로우 -->
+  <section class="section" id="flow">
+    <div class="section-title"><span class="num">3</span> 시스템 플로우</div>
+
+    <p style="color:var(--sub);margin-bottom:20px;font-size:13px">SlowBro는 두 가지 모드로 동작합니다: <strong>SlowBro 변환 모드</strong>와 <strong>원본 보기 모드</strong></p>
+
+    <!-- 플로우 A -->
+    <div style="background:white;border-radius:10px;border:1px solid var(--border);padding:24px;margin-bottom:20px">
+      <div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:16px">🐢 FlowA — SlowBro 변환 모드</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <div class="flow-step-label">URL 입력</div>
+          <div class="flow-step-desc">주소창에 URL 입력 또는 홈 버튼 클릭</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <div class="flow-step-label">사이트 감지</div>
+          <div class="flow-step-desc">URL 패턴으로 giants / interpark / korail 등 식별</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <div class="flow-step-label">HTML Fetch</div>
+          <div class="flow-step-desc">http.get 또는 mock 파일 읽기</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">4</div>
+          <div class="flow-step-label">Cheerio 파싱</div>
+          <div class="flow-step-desc">날짜·좌석·제출버튼 셀렉터 추출 → Steps 배열 생성</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">5</div>
+          <div class="flow-step-label">테마 반환</div>
+          <div class="flow-step-desc">사이트 색상 팔레트를 함께 반환</div>
+        </div>
+        <div class="flow-step accent">
+          <div class="flow-step-num">6</div>
+          <div class="flow-step-label">단순화 UI</div>
+          <div class="flow-step-desc">원본 사이트 색상 유지 + 광고·팝업 제거 + 큰 글씨 4단계 플로우</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 플로우 B -->
+    <div style="background:white;border-radius:10px;border:1px solid var(--border);padding:24px;margin-bottom:24px">
+      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px">🌐 FlowB — 원본 보기 모드</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="flow-step-num">1</div>
+          <div class="flow-step-label">모드 전환</div>
+          <div class="flow-step-desc">"원본 보기" 탭 클릭</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">2</div>
+          <div class="flow-step-label">BrowserView 생성</div>
+          <div class="flow-step-desc">Main 프로세스에서 BrowserView 인스턴스 생성</div>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-num">3</div>
+          <div class="flow-step-label">Bounds 계산</div>
+          <div class="flow-step-desc">navbar.bottom ~ window.innerHeight 로 좌표 계산</div>
+        </div>
+        <div class="flow-step accent">
+          <div class="flow-step-num">4</div>
+          <div class="flow-step-label">실제 사이트 렌더링</div>
+          <div class="flow-step-desc">Chromium이 그대로 렌더링. JS/CSS 완전 동작</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 예매 단계 플로우 -->
+    <div style="background:white;border-radius:10px;border:1px solid var(--border);padding:24px">
+      <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:16px">✅ FlowC — 예매 단계 (Guard 포함)</div>
+      <div class="diagram" style="font-size:12px">
+<span class="note">  사용자 클릭</span>
+       <span class="arrow">↓</span>
+  <span class="grn">guard.checkClick(sessionId, timestamp)</span>
+       <span class="arrow">↓</span>
+  <span class="note">클릭 간격 &lt; 250ms 이고 3회 이상?</span>
+  <span class="arrow">├── YES →</span> <span class="red">경고 표시 + 쿨다운 (매크로 차단)</span>
+  <span class="arrow">└── NO  →</span> <span class="grn">다음 스텝으로 진행</span>
+                   <span class="arrow">↓</span>
+            <span class="note">최종 제출 단계</span>
+                   <span class="arrow">↓</span>
+  <span class="grn">guard.checkSession(userId, eventId)</span>
+       <span class="arrow">↓</span>
+  <span class="note">동일 유저+이벤트 시도 횟수 ≥ 1?</span>
+  <span class="arrow">├── YES →</span> <span class="red">중복 예매 차단</span>
+  <span class="arrow">└── NO  →</span> <span class="grn">예매 완료 + TTS 안내</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ ERD -->
+  <section class="section" id="erd">
+    <div class="section-title"><span class="num">4</span> ERD (데이터 구조)</div>
+    <p style="color:var(--sub);font-size:13px;margin-bottom:20px">SlowBro는 DB 없이 in-memory 상태와 Map으로 동작합니다. 아래는 런타임 데이터 구조입니다.</p>
+
+    <div class="erd-grid">
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#3B5AC6">AppState (Renderer)</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">sessionId</span><span class="erd-field-pk">PK</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">userId</span><span class="erd-field-desc">demo_user</span></div>
+          <div class="erd-field"><span class="erd-field-type">Step[]</span><span class="erd-field-name">steps</span><span class="erd-field-desc">현재 플로우</span></div>
+          <div class="erd-field"><span class="erd-field-type">number</span><span class="erd-field-name">currentStep</span></div>
+          <div class="erd-field"><span class="erd-field-type">Record</span><span class="erd-field-name">answers</span><span class="erd-field-desc">{ stepId: value }</span></div>
+          <div class="erd-field"><span class="erd-field-type">boolean</span><span class="erd-field-name">ttsEnabled</span></div>
+          <div class="erd-field"><span class="erd-field-type">0|1|2</span><span class="erd-field-name">fontLevel</span></div>
+          <div class="erd-field"><span class="erd-field-type">boolean</span><span class="erd-field-name">browserMode</span></div>
+        </div>
+      </div>
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#0b1e45">Step</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">id</span><span class="erd-field-pk">PK</span></div>
+          <div class="erd-field"><span class="erd-field-type">enum</span><span class="erd-field-name">type</span><span class="erd-field-desc">select|counter|route|datepicker|trainlist|confirm</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">label</span></div>
+          <div class="erd-field"><span class="erd-field-type">string?</span><span class="erd-field-name">hint</span></div>
+          <div class="erd-field"><span class="erd-field-type">Option[]?</span><span class="erd-field-name">options</span><span class="erd-field-desc">select 타입</span></div>
+          <div class="erd-field"><span class="erd-field-type">number?</span><span class="erd-field-name">min / max</span><span class="erd-field-desc">counter 타입</span></div>
+          <div class="erd-field"><span class="erd-field-type">string[]?</span><span class="erd-field-name">stations</span><span class="erd-field-desc">route 타입</span></div>
+          <div class="erd-field"><span class="erd-field-type">string?</span><span class="erd-field-name">submitLabel</span><span class="erd-field-desc">confirm 타입</span></div>
+        </div>
+      </div>
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#1D7A4A">SiteTheme</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">primary</span><span class="erd-field-desc">#0b1e45</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">accent</span><span class="erd-field-desc">#d4002a</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">bg</span><span class="erd-field-desc">#f2f2f2</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">name</span><span class="erd-field-desc">Giants</span></div>
+          <div class="erd-field"><span class="erd-field-type">boolean</span><span class="erd-field-name">italic</span><span class="erd-field-desc">로고 기울기</span></div>
+        </div>
+      </div>
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#d4002a">GuardStore (Main, In-memory)</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">Map</span><span class="erd-field-name">clickHistory</span><span class="erd-field-desc">sessionId → timestamp[]</span></div>
+          <div class="erd-field"><span class="erd-field-type">Map</span><span class="erd-field-name">sessionLimits</span><span class="erd-field-desc">userId:eventId → count</span></div>
+          <div class="erd-field"><span class="erd-field-type">Set</span><span class="erd-field-name">verifiedUsers</span><span class="erd-field-desc">연령 인증 완료 userId</span></div>
+          <div class="erd-field"><span class="erd-field-type">250ms</span><span class="erd-field-name">HUMAN_MIN_INTERVAL</span></div>
+          <div class="erd-field"><span class="erd-field-type">3회</span><span class="erd-field-name">SUSPICIOUS_BURST</span></div>
+          <div class="erd-field"><span class="erd-field-type">1회</span><span class="erd-field-name">MAX_ATTEMPTS</span><span class="erd-field-desc">이벤트당 최대</span></div>
+        </div>
+      </div>
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#6d28d9">ParsedResult (IPC 응답)</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">siteKey</span><span class="erd-field-desc">giants | korail | ...</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">type</span><span class="erd-field-desc">baseball | ktx</span></div>
+          <div class="erd-field"><span class="erd-field-type">string</span><span class="erd-field-name">title</span></div>
+          <div class="erd-field"><span class="erd-field-type">Step[]</span><span class="erd-field-name">steps</span></div>
+          <div class="erd-field"><span class="erd-field-type">SiteTheme?</span><span class="erd-field-name">theme</span></div>
+        </div>
+      </div>
+
+      <div class="erd-entity">
+        <div class="erd-entity-header" style="background:#b45309">BrowserBounds</div>
+        <div class="erd-fields">
+          <div class="erd-field"><span class="erd-field-type">number</span><span class="erd-field-name">x</span><span class="erd-field-desc">항상 0</span></div>
+          <div class="erd-field"><span class="erd-field-type">number</span><span class="erd-field-name">y</span><span class="erd-field-desc">navbar.bottom</span></div>
+          <div class="erd-field"><span class="erd-field-type">number</span><span class="erd-field-name">width</span><span class="erd-field-desc">window.innerWidth</span></div>
+          <div class="erd-field"><span class="erd-field-type">number</span><span class="erd-field-name">height</span><span class="erd-field-desc">innerHeight - y</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="relation-list">
+      <div class="relation-item"><span class="rel-arrow">→</span> AppState <strong>1:N</strong> Step (steps 배열)</div>
+      <div class="relation-item"><span class="rel-arrow">→</span> Step <strong>1:N</strong> Option (options 배열, select 타입)</div>
+      <div class="relation-item"><span class="rel-arrow">→</span> ParsedResult <strong>1:1</strong> SiteTheme (nullable)</div>
+      <div class="relation-item"><span class="rel-arrow">→</span> ParsedResult <strong>1:N</strong> Step</div>
+      <div class="relation-item"><span class="rel-arrow">→</span> GuardStore <strong>1:N</strong> ClickHistory (세션별)</div>
+      <div class="relation-item"><span class="rel-arrow">→</span> BrowserBounds <strong>1:1</strong> BrowserView 인스턴스</div>
+    </div>
+  </section>
+
+  <!-- ⑤ IPC API 명세 -->
+  <section class="section" id="api">
+    <div class="section-title"><span class="num">5</span> IPC API 명세</div>
+    <p style="color:var(--sub);font-size:13px;margin-bottom:6px">
+      <span class="badge badge-blue">invoke</span> = 양방향 (응답 있음) &nbsp;
+      <span class="badge badge-green">send</span> = 단방향 (응답 없음) &nbsp;
+      <span class="badge badge-purple">event</span> = Main → Renderer 푸시
+    </p>
+    <p style="color:var(--sub);font-size:13px;margin-bottom:24px">모든 API는 <code>window.slowbro.*</code> 로 Renderer에서 접근. contextBridge를 통해 안전하게 노출됨.</p>
+
+    <!-- page:load -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-invoke">invoke</span>
+        <span class="api-channel">page:load</span>
+        <span class="api-desc">URL을 파싱해 단순화된 스텝 데이터 반환</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>url</code></td><td>string</td><td><code>mock://giants/baseball</code> | <code>https://...</code> | <code>file:///...</code></td></tr>
+          </tbody>
+        </table>
+        <br>
+        <table class="param-table">
+          <thead><tr><th>반환</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>ok</code></td><td>boolean</td><td>성공 여부</td></tr>
+            <tr><td><code>data.siteKey</code></td><td>string</td><td>감지된 사이트 키 (giants, korail, unknown …)</td></tr>
+            <tr><td><code>data.title</code></td><td>string</td><td>페이지 제목</td></tr>
+            <tr><td><code>data.steps</code></td><td>Step[]</td><td>단계별 UI 렌더링 데이터</td></tr>
+            <tr><td><code>data.theme</code></td><td>SiteTheme | null</td><td>원본 사이트 색상 팔레트</td></tr>
+            <tr><td><code>error</code></td><td>string?</td><td>ok=false 시 오류 메시지</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- guard:checkClick -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-invoke">invoke</span>
+        <span class="api-channel">guard:checkClick</span>
+        <span class="api-desc">클릭 속도로 매크로 여부 판단</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>sessionId</code></td><td>string</td><td>현재 세션 ID</td></tr>
+            <tr><td><code>timestamp</code></td><td>number</td><td>클릭 발생 시각 (Date.now())</td></tr>
+          </tbody>
+        </table>
+        <br>
+        <table class="param-table">
+          <thead><tr><th>반환</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>safe</code></td><td>boolean</td><td>true: 정상 / false: 250ms 미만 3회 이상 클릭 → 차단</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- guard:checkSession -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-invoke">invoke</span>
+        <span class="api-channel">guard:checkSession</span>
+        <span class="api-desc">동일 이벤트 중복 예매 차단</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>userId</code></td><td>string</td><td>인증된 사용자 ID</td></tr>
+            <tr><td><code>eventId</code></td><td>string</td><td>경기/열차 식별자 (answers 값 조합)</td></tr>
+          </tbody>
+        </table>
+        <br>
+        <table class="param-table">
+          <thead><tr><th>반환</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>allowed</code></td><td>boolean</td><td>true: 허용 / false: 이미 시도한 이벤트 → 차단</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- tts:speak -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-send">send</span>
+        <span class="api-channel">tts:speak</span>
+        <span class="api-desc">음성 안내 로그 (실제 TTS는 Renderer Web Speech API)</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>text</code></td><td>string</td><td>읽어줄 텍스트 (ko-KR, 0.9× 속도)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- window:set-icon -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-send">send</span>
+        <span class="api-channel">window:set-icon</span>
+        <span class="api-desc">Canvas로 렌더링한 🐢 이모지를 앱 아이콘으로 설정</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>dataUrl</code></td><td>string</td><td>256×256 PNG data URL (canvas.toDataURL)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- browser:* -->
+    <div class="api-block">
+      <div class="api-header">
+        <span class="api-method method-invoke">invoke</span>
+        <span class="api-channel">browser:open</span>
+        <span class="api-desc">BrowserView 생성 + 실제 사이트 로드</span>
+      </div>
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>파라미터</th><th>타입</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><code>url</code></td><td>string</td><td>로드할 URL</td></tr>
+            <tr><td><code>bounds.x/y</code></td><td>number</td><td>BrowserView 위치 (navbar 아래)</td></tr>
+            <tr><td><code>bounds.width/height</code></td><td>number</td><td>window.innerWidth / innerHeight - y</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="api-block">
+        <div class="api-header">
+          <span class="api-method method-invoke">invoke</span>
+          <span class="api-channel">browser:navigate</span>
+        </div>
+        <div class="api-body" style="font-size:12px;color:var(--sub)">
+          <code>url: string</code> → <code>{ ok: boolean }</code><br>BrowserView URL 변경
+        </div>
+      </div>
+      <div class="api-block">
+        <div class="api-header">
+          <span class="api-method method-invoke">invoke</span>
+          <span class="api-channel">browser:close</span>
+        </div>
+        <div class="api-body" style="font-size:12px;color:var(--sub)">
+          BrowserView 제거 + 메모리 해제 → <code>{ ok: boolean }</code>
+        </div>
+      </div>
+      <div class="api-block">
+        <div class="api-header">
+          <span class="api-method method-invoke">invoke</span>
+          <span class="api-channel">browser:back / forward / reload</span>
+        </div>
+        <div class="api-body" style="font-size:12px;color:var(--sub)">
+          BrowserView 히스토리 네비게이션 및 새로고침
+        </div>
+      </div>
+      <div class="api-block">
+        <div class="api-header">
+          <span class="api-method method-invoke">invoke</span>
+          <span class="api-channel">browser:setBounds</span>
+        </div>
+        <div class="api-body" style="font-size:12px;color:var(--sub)">
+          <code>bounds: BrowserBounds</code><br>창 리사이즈 시 BrowserView 위치 재조정
+        </div>
+      </div>
+    </div>
+
+    <br>
+    <p style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:12px">📡 Main → Renderer 이벤트 (Push)</p>
+    <div class="api-block">
+      <div class="api-body">
+        <table class="param-table">
+          <thead><tr><th>채널</th><th>페이로드</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="api-method method-event" style="font-size:11px">event</span> <code>browser:url-changed</code></td>
+              <td><code>url: string</code></td>
+              <td>BrowserView 페이지 이동 시 주소창·네비바 URL 업데이트</td>
+            </tr>
+            <tr>
+              <td><span class="api-method method-event" style="font-size:11px">event</span> <code>browser:title-changed</code></td>
+              <td><code>title: string</code></td>
+              <td>페이지 제목 변경 시 window.title 업데이트</td>
+            </tr>
+            <tr>
+              <td><span class="api-method method-event" style="font-size:11px">event</span> <code>browser:loading</code></td>
+              <td><code>loading: boolean</code></td>
+              <td>로딩 스피너 표시/숨김, 새로고침 버튼 ↻/✕ 전환</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<div style="background:var(--navy);color:rgba(255,255,255,0.4);text-align:center;padding:20px;font-size:12px;margin-top:40px">
+  SlowBro v0.1.0 · 2026 KHU Hackathon · Electron 28 + Cheerio + Web Speech API
+</div>
+
+</body>
+</html>

@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>롯데자이언츠 티켓 - 예매</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      font-size: 13px;
+      background: #f2f2f2;
+      color: #222;
+    }
+
+    /* ── 상단 헤더 ── */
+    .header-top {
+      background: #0b1e45;
+      color: #aab;
+      font-size: 11px;
+      padding: 5px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-top a { color: #aab; text-decoration: none; margin-left: 12px; }
+    .header-top a:hover { color: #fff; }
+
+    .header-main {
+      background: #0b1e45;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 2px solid #d4002a;
+    }
+    .logo {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -1px;
+      font-style: italic;
+      padding: 12px 20px 12px 0;
+      border-right: 1px solid rgba(255,255,255,0.15);
+      margin-right: 20px;
+    }
+    .logo span { color: #d4002a; }
+    nav { display: flex; gap: 2px; }
+    nav a {
+      display: block;
+      padding: 16px 14px;
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    nav a:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    nav a.active { color: #fff; background: rgba(212,0,42,0.3); }
+    .header-utils {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .header-utils button {
+      padding: 5px 12px;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.3);
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .header-utils button.btn-login {
+      background: #d4002a;
+      border-color: #d4002a;
+      color: white;
+    }
+
+    /* ── 팝업 오버레이 ── */
+    #popup-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .popup-box {
+      background: white;
+      width: 420px;
+      border-top: 4px solid #d4002a;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    .popup-header {
+      background: #0b1e45;
+      color: white;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .popup-header button {
+      background: none; border: none; color: white; font-size: 18px; cursor: pointer; line-height: 1;
+    }
+    .popup-body { padding: 0; }
+    .popup-body img-placeholder {
+      display: block;
+      width: 100%;
+      height: 180px;
+      background: linear-gradient(135deg, #0b1e45, #d4002a);
+      position: relative;
+    }
+    .popup-img {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #0b1e45 0%, #1a3a7a 50%, #d4002a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: white;
+      font-size: 22px;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: 1px;
+    }
+    .popup-img .sub { font-size: 12px; font-weight: 400; margin-top: 6px; opacity: 0.8; }
+    .popup-footer {
+      border-top: 1px solid #eee;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #888;
+    }
+    .popup-footer label { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .popup-footer button {
+      background: #555;
+      color: white;
+      border: none;
+      padding: 5px 14px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* ── 메인 레이아웃 ── */
+    .page-wrap {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      gap: 14px;
+    }
+
+    /* ── 사이드바 ── */
+    .sidebar { width: 150px; flex-shrink: 0; }
+    .sidebar-banner {
+      background: linear-gradient(180deg, #0b1e45, #1a3a7a);
+      color: white;
+      padding: 16px 10px;
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .sidebar-banner .sb-logo { font-size: 20px; font-weight: 900; font-style: italic; margin-bottom: 6px; }
+    .sidebar-banner .sb-sub { font-size: 10px; color: rgba(255,255,255,0.65); }
+    .sidebar-banner .sb-btn {
+      margin-top: 10px;
+      display: block;
+      background: #d4002a;
+      color: white;
+      padding: 5px;
+      font-size: 10px;
+      border-radius: 2px;
+    }
+    .sidebar-ad {
+      background: #fff;
+      border: 1px solid #ddd;
+      text-align: center;
+      padding: 10px 6px;
+      margin-bottom: 8px;
+      font-size: 10px;
+      color: #999;
+    }
+    .sidebar-ad .ad-tag {
+      font-size: 9px;
+      color: #bbb;
+      border: 1px solid #ddd;
+      padding: 1px 3px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    .sidebar-ad img-ph {
+      display: block;
+      width: 100%;
+      height: 80px;
+      background: #f5f5f5;
+      margin-bottom: 4px;
+    }
+
+    /* ── 본문 ── */
+    .content { flex: 1; min-width: 0; }
+
+    /* 브레드크럼 */
+    .breadcrumb {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .breadcrumb a { color: #888; text-decoration: none; }
+    .breadcrumb .sep { color: #ccc; }
+
+    /* 탭 */
+    .book-tabs {
+      display: flex;
+      border-bottom: 2px solid #0b1e45;
+      margin-bottom: 0;
+    }
+    .book-tab {
+      padding: 9px 18px;
+      background: #e8e8e8;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      font-size: 12px;
+      cursor: pointer;
+      color: #555;
+      margin-right: 2px;
+    }
+    .book-tab.active {
+      background: #0b1e45;
+      color: white;
+      border-color: #0b1e45;
+      font-weight: bold;
+    }
+
+    /* 예매 패널 */
+    .book-panel {
+      background: white;
+      border: 1px solid #ccc;
+      border-top: none;
+      padding: 16px;
+    }
+
+    /* 날짜/게임 선택 */
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #0b1e45;
+      border-left: 3px solid #d4002a;
+      padding-left: 8px;
+      margin-bottom: 10px;
+      margin-top: 16px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .game-list { border: 1px solid #ddd; }
+    .game-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 12px;
+      border-bottom: 1px solid #eee;
+      gap: 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .game-item:hover { background: #fafafa; }
+    .game-item.selected { background: #f0f4ff; }
+    .game-item input[type=radio] { margin: 0; flex-shrink: 0; }
+    .game-date { color: #0b1e45; font-weight: bold; min-width: 90px; }
+    .game-match { flex: 1; }
+    .game-match .home { color: #d4002a; font-weight: bold; }
+    .game-status {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 2px;
+    }
+    .game-status.open { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .game-status.few  { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+    .game-price { font-size: 11px; color: #555; min-width: 80px; text-align: right; }
+
+    /* 좌석 등급 */
+    .grade-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .grade-table th {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      padding: 7px 10px;
+      text-align: center;
+      font-weight: bold;
+      color: #333;
+    }
+    .grade-table td {
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .grade-table tr:hover td { background: #fafafa; }
+    .grade-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 2px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .grade-1st  { background: #0b1e45; color: white; }
+    .grade-3rd  { background: #1a5c1a; color: white; }
+    .grade-out  { background: #e65100; color: white; }
+    .grade-prem { background: #7b1fa2; color: white; }
+    .grade-select {
+      padding: 3px 6px;
+      border: 1px solid #ccc;
+      font-size: 11px;
+      border-radius: 2px;
+      background: white;
+    }
+
+    /* 좌석 맵 */
+    .seat-map-wrap {
+      border: 1px solid #ddd;
+      background: #f8f8f8;
+      padding: 14px;
+      text-align: center;
+    }
+    .seat-map-title {
+      font-size: 11px;
+      color: #777;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+    .stadium-svg-wrap {
+      display: inline-block;
+      position: relative;
+    }
+    /* 스타디움 CSS 좌석맵 */
+    .field {
+      width: 300px;
+      height: 180px;
+      background: #3a7d44;
+      border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+      position: relative;
+      margin: 0 auto 0;
+      border: 3px solid #2a5e32;
+    }
+    .field::after {
+      content: 'GROUND';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.4);
+      font-size: 14px;
+      font-weight: bold;
+      letter-spacing: 3px;
+    }
+    .seats-wrap {
+      position: relative;
+      width: 360px;
+      margin: 0 auto;
+    }
+    .seat-row {
+      display: flex;
+      justify-content: center;
+      gap: 2px;
+      margin-bottom: 2px;
+    }
+    .seat {
+      width: 9px;
+      height: 9px;
+      border-radius: 1px;
+      cursor: pointer;
+      opacity: 0.85;
+    }
+    .seat:hover { opacity: 1; transform: scale(1.2); }
+    .seat.s1  { background: #1565c0; }
+    .seat.s3  { background: #2e7d32; }
+    .seat.s-out { background: #e65100; }
+    .seat.s-prem { background: #7b1fa2; }
+    .seat.taken { background: #bbb; cursor: not-allowed; }
+    .seat.selected-seat { background: #ffd600 !important; }
+
+    .seat-legend {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: #555;
+    }
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 1px;
+      flex-shrink: 0;
+    }
+
+    /* 인원 선택 */
+    .count-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .count-row label { font-size: 12px; min-width: 70px; color: #444; }
+    .count-select { padding: 3px 8px; border: 1px solid #ccc; font-size: 12px; border-radius: 2px; }
+
+    /* 약관 */
+    .terms-wrap {
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: #555;
+      height: 70px;
+      overflow-y: auto;
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    /* 결제 버튼 */
+    .btn-area {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn-book {
+      flex: 1;
+      padding: 11px;
+      background: #d4002a;
+      color: white;
+      border: none;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-book:hover { background: #b0001f; }
+    .btn-cancel {
+      padding: 11px 20px;
+      background: #666;
+      color: white;
+      border: none;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* 공지 배너 */
+    .notice-bar {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      padding: 7px 12px;
+      font-size: 11px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .notice-tag {
+      background: #f57f17;
+      color: white;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    /* 광고 가로 배너 */
+    .ad-horizontal {
+      background: linear-gradient(90deg, #0b1e45, #1a3a7a);
+      color: white;
+      padding: 8px 16px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .ad-horizontal .ad-tag { font-size: 9px; background: rgba(255,255,255,0.2); padding: 1px 4px; margin-right: 6px; }
+    .ad-horizontal .ad-close { cursor: pointer; opacity: 0.6; }
+
+    /* 우측 사이드 */
+    .right-side { width: 200px; flex-shrink: 0; }
+    .ticket-summary {
+      background: white;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+    .ts-header {
+      background: #0b1e45;
+      color: white;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .ts-body { padding: 10px 12px; font-size: 11px; }
+    .ts-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .ts-row:last-child { border-bottom: none; }
+    .ts-label { color: #777; }
+    .ts-value { font-weight: bold; color: #222; }
+    .ts-total { background: #f8f8f8; padding: 8px 12px; border-top: 1px solid #ddd; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; }
+    .ts-total .price { color: #d4002a; font-size: 15px; }
+
+    .right-ad {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 10px;
+      color: #aaa;
+    }
+    .right-ad .ad-tag { font-size: 9px; color: #ccc; display: block; margin-bottom: 5px; border: 1px solid #eee; padding: 1px 3px; display: inline-block; }
+    .ad-placeholder {
+      background: linear-gradient(135deg, #f0f0f0, #e8e8e8);
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #bbb;
+      margin-bottom: 5px;
+    }
+
+    /* 푸터 */
+    .footer {
+      background: #0b1e45;
+      color: rgba(255,255,255,0.5);
+      padding: 16px 20px;
+      font-size: 11px;
+      text-align: center;
+      margin-top: 20px;
+    }
+    .footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 8px; }
+    .footer a:hover { color: white; }
+
+    /* 스텝 표시 */
+    .step-bar {
+      display: flex;
+      border: 1px solid #ddd;
+      margin-bottom: 14px;
+      background: white;
+      overflow: hidden;
+    }
+    .step-item {
+      flex: 1;
+      text-align: center;
+      padding: 9px 6px;
+      font-size: 11px;
+      border-right: 1px solid #ddd;
+      color: #999;
+    }
+    .step-item:last-child { border-right: none; }
+    .step-item.done { background: #e8f0e8; color: #2e7d32; }
+    .step-item.current { background: #0b1e45; color: white; font-weight: bold; }
+    .step-num { font-weight: bold; margin-right: 4px; }
+
+    select, input[type=text], input[type=number] {
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 팝업 -->
+<div id="popup-overlay">
+  <div class="popup-box">
+    <div class="popup-header">
+      <span>⚾ 2026 KBO 롯데자이언츠 홈경기 예매 안내</span>
+      <button onclick="document.getElementById('popup-overlay').style.display='none'">✕</button>
+    </div>
+    <div class="popup-img">
+      <div>LOTTE GIANTS</div>
+      <div>2026 시즌 홈경기</div>
+      <div class="sub">사직야구장 | 전석 지정제 운영</div>
+    </div>
+    <div style="padding:10px 14px;font-size:11px;color:#555;line-height:1.7;border-top:1px solid #eee">
+      ※ 예매 취소는 경기일 1일 전까지 가능합니다.<br>
+      ※ 현장 발권 시 예매 수수료 1,000원이 부과됩니다.<br>
+      ※ 본인 확인 미흡 시 입장이 제한될 수 있습니다.<br>
+      ※ 중복 예매 적발 시 예매가 자동 취소됩니다.
+    </div>
+    <div class="popup-footer">
+      <label><input type="checkbox"> 오늘 하루 보지 않기</label>
+      <button onclick="document.getElementById('popup-overlay').style.display='none'">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상단 유틸 바 -->
+<div class="header-top">
+  <span>롯데자이언츠 공식 티켓 예매</span>
+  <div>
+    <a href="#">공지사항</a>
+    <a href="#">고객센터</a>
+    <a href="#">마이페이지</a>
+    <a href="#">로그아웃</a>
+    <a href="#">사이트맵</a>
+  </div>
+</div>
+
+<!-- 메인 헤더 -->
+<div class="header-main">
+  <div class="logo">G<span>iants</span></div>
+  <nav>
+    <a href="#">홈</a>
+    <a href="#" class="active">티켓예매</a>
+    <a href="#">경기일정</a>
+    <a href="#">선수단</a>
+    <a href="#">팬서비스</a>
+    <a href="#">쇼핑몰</a>
+    <a href="#">커뮤니티</a>
+  </nav>
+  <div class="header-utils">
+    <button>회원가입</button>
+    <button class="btn-login">로그인</button>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <!-- 왼쪽 사이드바 -->
+  <div class="sidebar">
+    <div class="sidebar-banner">
+      <div class="sb-logo">G Shop</div>
+      <div class="sb-sub">자이언츠 공식<br>굿즈 스토어</div>
+      <span class="sb-btn">바로가기 &gt;</span>
+    </div>
+    <div class="sidebar-ad">
+      <div class="ad-tag">AD</div>
+      <div style="background:#f5f5f5;height:80px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:10px;margin-bottom:4px;">광고 영역</div>
+      <div>롯데 L.POINT 카드<br>야구 특별 혜택</div>
+    </div>
+    <div class="sidebar-ad">
+      <div class="ad-tag">AD</div>
+      <div style="background:#f5f5f5;height:80px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:10px;margin-bottom:4px;">광고 영역</div>
+      <div>사직구장 주변<br>주차 예약</div>
+    </div>
+    <div class="sidebar-ad">
+      <div class="ad-tag">공지</div>
+      <div style="font-size:10px;color:#444;text-align:left;line-height:1.6">
+        ▶ 구단 공식 SNS<br>
+        ▶ 팬클럽 혜택 안내<br>
+        ▶ 시즌권 문의<br>
+        ▶ 단체 관람 신청
+      </div>
+    </div>
+  </div>
+
+  <!-- 본문 -->
+  <div class="content">
+    <div class="breadcrumb">
+      <a href="#">홈</a><span class="sep">›</span>
+      <a href="#">티켓예매</a><span class="sep">›</span>
+      <span>홈경기 예매</span>
+    </div>
+
+    <div class="ad-horizontal">
+      <div><span class="ad-tag">이벤트</span> 🎁 6월 홈경기 예매 시 자이언츠 MD 상품 선착순 증정!</div>
+      <span class="ad-close">✕</span>
+    </div>
+
+    <!-- 진행 단계 -->
+    <div class="step-bar">
+      <div class="step-item done"><span class="step-num">①</span>로그인</div>
+      <div class="step-item current"><span class="step-num">②</span>경기선택</div>
+      <div class="step-item"><span class="step-num">③</span>좌석선택</div>
+      <div class="step-item"><span class="step-num">④</span>인원/옵션</div>
+      <div class="step-item"><span class="step-num">⑤</span>결제정보</div>
+      <div class="step-item"><span class="step-num">⑥</span>최종확인</div>
+    </div>
+
+    <div class="notice-bar">
+      <span class="notice-tag">주의</span>
+      결제 완료 후 5분 이내 취소 건에 한해 수수료 없이 취소 가능합니다. 이후에는 취소 수수료(예매가의 10%)가 발생합니다.
+    </div>
+
+    <!-- 탭 -->
+    <div class="book-tabs">
+      <button class="book-tab active">홈경기 예매</button>
+      <button class="book-tab">원정경기 예매</button>
+      <button class="book-tab">시즌권/패키지</button>
+    </div>
+
+    <div class="book-panel">
+      <!-- 경기 선택 -->
+      <div class="section-title">경기 선택</div>
+      <div class="game-list">
+        <div class="game-item selected">
+          <input type="radio" name="game" checked>
+          <span class="game-date">05/10 (토) 14:00</span>
+          <span class="game-match"><span class="home">롯데</span> vs LG | 사직야구장</span>
+          <span class="game-status open">예매가능</span>
+          <span class="game-price">12,000~55,000원</span>
+        </div>
+        <div class="game-item">
+          <input type="radio" name="game">
+          <span class="game-date">05/11 (일) 17:00</span>
+          <span class="game-match"><span class="home">롯데</span> vs LG | 사직야구장</span>
+          <span class="game-status few">잔여석 적음</span>
+          <span class="game-price">12,000~55,000원</span>
+        </div>
+        <div class="game-item">
+          <input type="radio" name="game">
+          <span class="game-date">05/14 (수) 18:30</span>
+          <span class="game-match"><span class="home">롯데</span> vs KT | 사직야구장</span>
+          <span class="game-status open">예매가능</span>
+          <span class="game-price">12,000~55,000원</span>
+        </div>
+        <div class="game-item">
+          <input type="radio" name="game">
+          <span class="game-date">05/17 (토) 14:00</span>
+          <span class="game-match"><span class="home">롯데</span> vs 삼성 | 사직야구장</span>
+          <span class="game-status open">예매가능</span>
+          <span class="game-price">12,000~55,000원</span>
+        </div>
+        <div class="game-item">
+          <input type="radio" name="game">
+          <span class="game-date">05/18 (일) 17:00</span>
+          <span class="game-match"><span class="home">롯데</span> vs 삼성 | 사직야구장</span>
+          <span class="game-status few">잔여석 적음</span>
+          <span class="game-price">12,000~55,000원</span>
+        </div>
+      </div>
+
+      <!-- 좌석 등급 -->
+      <div class="section-title">좌석 등급 선택</div>
+      <table class="grade-table">
+        <thead>
+          <tr>
+            <th>선택</th>
+            <th>구역</th>
+            <th>가격</th>
+            <th>잔여석</th>
+            <th>인원</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="radio" name="grade" checked></td>
+            <td><span class="grade-badge grade-1st">1루 지정석</span></td>
+            <td>35,000원</td>
+            <td><span style="color:#2e7d32">여유</span></td>
+            <td>
+              <select class="grade-select">
+                <option>1명</option><option selected>2명</option><option>3명</option><option>4명</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="radio" name="grade"></td>
+            <td><span class="grade-badge grade-3rd">3루 지정석</span></td>
+            <td>35,000원</td>
+            <td><span style="color:#2e7d32">여유</span></td>
+            <td>
+              <select class="grade-select">
+                <option>1명</option><option>2명</option><option>3명</option><option>4명</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="radio" name="grade"></td>
+            <td><span class="grade-badge grade-out">외야 응원석</span></td>
+            <td>12,000원</td>
+            <td><span style="color:#e65100">적음</span></td>
+            <td>
+              <select class="grade-select">
+                <option>1명</option><option>2명</option><option>3명</option><option>4명</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><input type="radio" name="grade"></td>
+            <td><span class="grade-badge grade-prem">중앙 프리미엄</span></td>
+            <td>55,000원</td>
+            <td><span style="color:#2e7d32">여유</span></td>
+            <td>
+              <select class="grade-select">
+                <option>1명</option><option>2명</option><option>3명</option><option>4명</option>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 좌석 직접 선택 -->
+      <div class="section-title">좌석 직접 선택 <span style="font-size:10px;font-weight:normal;color:#888">(선택 후 확정 버튼 클릭)</span></div>
+      <div class="seat-map-wrap">
+        <div class="seat-map-title">▶ 좌석을 클릭하면 선택됩니다 &nbsp;|&nbsp; ■ 선택완료 ■ 예매불가</div>
+        <div class="field"></div>
+        <!-- 좌석 rows (simplified) -->
+        <div class="seats-wrap" id="seats-wrap">
+          <!-- 1루 지정석 구역 (파란색) -->
+          <div style="display:flex;gap:16px;justify-content:center;margin-top:8px">
+            <div>
+              <div style="font-size:9px;color:#1565c0;text-align:center;margin-bottom:2px">1루 지정석</div>
+              <div id="s1-seats"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#e65100;text-align:center;margin-bottom:2px">외야 응원석</div>
+              <div id="out-seats"></div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:#2e7d32;text-align:center;margin-bottom:2px">3루 지정석</div>
+              <div id="s3-seats"></div>
+            </div>
+          </div>
+        </div>
+        <div class="seat-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1565c0"></div>1루 지정</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2e7d32"></div>3루 지정</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#e65100"></div>외야 응원</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#7b1fa2"></div>프리미엄</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#bbb"></div>예매불가</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ffd600"></div>선택중</div>
+        </div>
+      </div>
+
+      <!-- 할인 선택 -->
+      <div class="section-title">할인 적용</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px">
+        <label style="font-size:12px"><input type="checkbox"> 경로우대 (만65세 이상, 신분증 필수)</label>
+        <label style="font-size:12px"><input type="checkbox"> 장애인 할인 (복지카드 제시)</label>
+        <label style="font-size:12px"><input type="checkbox"> 유공자 할인</label>
+        <label style="font-size:12px"><input type="checkbox"> 그룹할인 (10인 이상)</label>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:4px">※ 할인 적용 시 현장에서 반드시 증빙서류를 지참하셔야 합니다.</div>
+
+      <!-- 발권 방법 -->
+      <div class="section-title">수령 방법</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <label style="font-size:12px"><input type="radio" name="pickup" checked> 모바일 티켓 (앱에서 확인)</label>
+        <label style="font-size:12px"><input type="radio" name="pickup"> 현장 발권 (수수료 1,000원)</label>
+        <label style="font-size:12px"><input type="radio" name="pickup"> 우편 배송 (3~5 영업일, 배송비 2,500원)</label>
+      </div>
+
+      <!-- 약관 -->
+      <div class="section-title">이용약관 및 개인정보 수집</div>
+      <div class="terms-wrap">
+        제1조 (목적) 이 약관은 롯데자이언츠(주) (이하 "회사")가 운영하는 온라인 티켓 예매 서비스의 이용에 관한 조건 및 절차, 회사와 이용자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다. 제2조 (약관의 효력 및 변경) 이 약관은 서비스 화면에 게시하거나 이용자에게 공지함으로써 효력이 발생합니다. 회사는 합리적인 사유가 있는 경우 관련 법령에 위배되지 않는 범위 내에서 이 약관을 변경할 수 있으며, 변경된 약관은 공지사항을 통해 공지합니다...
+      </div>
+      <div class="check-row"><input type="checkbox"> <span style="font-size:12px">이용약관에 동의합니다. <span style="color:#d4002a">(필수)</span></span></div>
+      <div class="check-row"><input type="checkbox"> <span style="font-size:12px">개인정보 수집·이용에 동의합니다. <span style="color:#d4002a">(필수)</span></span></div>
+      <div class="check-row"><input type="checkbox"> <span style="font-size:12px">마케팅 정보 수신에 동의합니다. (선택)</span></div>
+
+      <div class="btn-area">
+        <button class="btn-cancel">취소</button>
+        <button class="btn-book" onclick="alert('예매를 진행합니다.\n\n결제 페이지로 이동합니다...')">결제하기 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 오른쪽 사이드 -->
+  <div class="right-side">
+    <div class="ticket-summary">
+      <div class="ts-header">예매 내역</div>
+      <div class="ts-body">
+        <div class="ts-row"><span class="ts-label">경기</span><span class="ts-value" style="font-size:10px">롯데 vs LG</span></div>
+        <div class="ts-row"><span class="ts-label">일시</span><span class="ts-value" style="font-size:10px">05/10 14:00</span></div>
+        <div class="ts-row"><span class="ts-label">구역</span><span class="ts-value" style="font-size:10px">1루 지정석</span></div>
+        <div class="ts-row"><span class="ts-label">인원</span><span class="ts-value">2명</span></div>
+        <div class="ts-row"><span class="ts-label">단가</span><span class="ts-value">35,000원</span></div>
+      </div>
+      <div class="ts-total">
+        <span>합계</span>
+        <span class="price">70,000원</span>
+      </div>
+    </div>
+    <div class="right-ad">
+      <div class="ad-tag">AD</div>
+      <div class="ad-placeholder">광고 영역</div>
+      <div>롯데카드 야구 혜택</div>
+    </div>
+    <div class="right-ad">
+      <div class="ad-tag">AD</div>
+      <div class="ad-placeholder">광고 영역</div>
+      <div>사직구장 맛집 추천</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <a href="#">이용약관</a>
+  <a href="#">개인정보처리방침</a>
+  <a href="#">이메일무단수집거부</a>
+  <a href="#">고객센터</a>
+  <a href="#">회사소개</a>
+  <br><br>
+  Copyright © 2026 Lotte Giants. All rights reserved.
+</div>
+
+<script>
+  // 좌석 생성
+  function makeSeatRow(containerId, cls, rows, cols, takenRatio) {
+    const container = document.getElementById(containerId)
+    for (let r = 0; r < rows; r++) {
+      const row = document.createElement('div')
+      row.className = 'seat-row'
+      for (let c = 0; c < cols; c++) {
+        const seat = document.createElement('div')
+        const taken = Math.random() < takenRatio
+        seat.className = 'seat ' + (taken ? 'taken' : cls)
+        if (!taken) {
+          seat.addEventListener('click', function() {
+            document.querySelectorAll('.seat.selected-seat').forEach(s => {
+              s.classList.remove('selected-seat')
+            })
+            this.classList.add('selected-seat')
+          })
+        }
+        row.appendChild(seat)
+      }
+      container.appendChild(row)
+    }
+  }
+  makeSeatRow('s1-seats', 's1', 5, 12, 0.35)
+  makeSeatRow('out-seats', 's-out', 5, 8, 0.55)
+  makeSeatRow('s3-seats', 's3', 5, 12, 0.3)
+</script>
+</body>
+</html>
