@@ -230,7 +230,14 @@ ipcMain.handle('browser:injectHighlight', async (_, { selectors }) => {
 // ─── Spotify 전체 카탈로그 랜덤 탐색 ─────────────────────────────────────────
 ipcMain.handle('spotify:discover', async (event, { clientId, clientSecret }) => {
   try {
-    const items = await spotifyApi.discover(clientId, clientSecret)
+    const rawItems = await spotifyApi.discover(clientId, clientSecret)
+    // 하트(바로가기) 클릭 시 BrowserView로 열 수 있도록 externalUrl 부여
+    const items = rawItems.map(it => ({
+      ...it,
+      externalUrl: it.id
+        ? `https://open.spotify.com/${it.type === 'album' ? 'album' : 'track'}/${it.id}`
+        : null,
+    }))
     return { ok: true, items }
   } catch (err) {
     console.error('[Spotify]', err.message)
