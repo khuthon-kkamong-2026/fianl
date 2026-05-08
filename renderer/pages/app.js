@@ -269,7 +269,7 @@ $('bv-slow-mode').addEventListener('click', async () => {
 
   // Netflix는 백그라운드 추출(로그인된 세션 공유) → 영상 카드 UI로 분기
   if (/(^https?:\/\/)?(www\.)?netflix\.com/i.test(currentUrl)) {
-    btn.textContent = '⏳ 추출 중... (10~30초)'
+    btn.textContent = '⏳ 추출 중...'
     const result = await api.netflixExtract()
     btn.classList.remove('loading')
     btn.textContent = '👁 찾아보자'

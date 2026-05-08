@@ -15,48 +15,67 @@ const NETFLIX_UA =
 
 const isNetflixUrl = (url) => /(^https?:\/\/)?(www\.)?netflix\.com/i.test(url || '')
 
-// 백그라운드 추출 스크립트 (NetflixShuffle 프로젝트의 netflixExtractor.js 이식)
-const NETFLIX_SCROLL_SCRIPT = `
-new Promise(async (resolve) => {
-  await new Promise(r => setTimeout(r, 3000));
-  for (let i = 0; i < 15; i++) {
-    window.scrollBy(0, 800);
-    await new Promise(r => setTimeout(r, 600));
-  }
-  window.scrollTo(0, 0);
-  await new Promise(r => setTimeout(r, 1000));
-  resolve();
-});
-`
+// 적응형 스크롤·추출 단일 스크립트 — 고정 13초 → 보통 3~6초로 단축
+// 충분한 카드(TARGET) 모이거나 새 카드가 더 이상 안 나오면 즉시 중단
 const NETFLIX_EXTRACT_SCRIPT = `
-(function() {
-  const cards = document.querySelectorAll(
-    '.title-card, [data-uia="title-card"], .slider-item, [data-uia*="title-card"]'
-  );
-  const seen = new Set();
-  const results = [];
-  cards.forEach(card => {
-    const link = card.querySelector('a[href*="/watch/"], a[href*="jbv="]');
-    if (!link) return;
-    const href = link.href;
-    const idMatch = href.match(/\\/watch\\/(\\d+)/) || href.match(/jbv=(\\d+)/);
-    if (!idMatch) return;
-    const id = idMatch[1];
-    if (seen.has(id)) return;
-    seen.add(id);
-    const img = card.querySelector('img');
-    const title = (img && img.alt)
-                || card.getAttribute('aria-label')
-                || link.getAttribute('aria-label')
-                || '';
-    results.push({
-      id, title: title.trim(),
-      thumbnail: (img && img.src) || '',
-      href
+new Promise(async (resolve) => {
+  function extract() {
+    const cards = document.querySelectorAll(
+      '.title-card, [data-uia="title-card"], .slider-item, [data-uia*="title-card"]'
+    );
+    const seen = new Set();
+    const results = [];
+    cards.forEach(card => {
+      const link = card.querySelector('a[href*="/watch/"], a[href*="jbv="]');
+      if (!link) return;
+      const href = link.href;
+      const idMatch = href.match(/\\/watch\\/(\\d+)/) || href.match(/jbv=(\\d+)/);
+      if (!idMatch) return;
+      const id = idMatch[1];
+      if (seen.has(id)) return;
+      seen.add(id);
+      const img = card.querySelector('img');
+      const title = (img && img.alt)
+                  || card.getAttribute('aria-label')
+                  || link.getAttribute('aria-label')
+                  || '';
+      results.push({
+        id, title: title.trim(),
+        thumbnail: (img && img.src) || '',
+        href
+      });
     });
-  });
-  return results;
-})();
+    return results;
+  }
+
+  // 첫 행 렌더 대기 (3초 → 1.5초)
+  await new Promise(r => setTimeout(r, 1500));
+
+  const TARGET           = 60;     // 이만큼 모이면 즉시 종료
+  const MAX_ITERATIONS   = 20;     // 최대 스크롤 횟수 안전 장치
+  const SCROLL_PAUSE     = 350;    // 0.6초 → 0.35초
+  const STABLE_THRESHOLD = 3;      // N회 연속 카드 수 그대로면 종료
+
+  let last = extract().length;
+  let stable = 0;
+
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    window.scrollBy(0, window.innerHeight);
+    await new Promise(r => setTimeout(r, SCROLL_PAUSE));
+
+    const cur = extract().length;
+    if (cur >= TARGET) break;
+    if (cur === last) {
+      stable++;
+      if (stable >= STABLE_THRESHOLD) break;
+    } else {
+      stable = 0;
+      last = cur;
+    }
+  }
+
+  resolve(extract());
+});
 `
 
 // ─── 메인 윈도우 (SlowBro UI) ───────────────────────────────────────────────
@@ -319,6 +338,7 @@ ipcMain.handle('netflix:extract', async () => {
   netflixExtractorView.setBounds({ x: -2000, y: 0, width: 1280, height: 800 })
   netflixExtractorView.setAutoResize({ width: false, height: false })
 
+  const t0 = Date.now()
   try {
     await netflixExtractorView.webContents.loadURL('https://www.netflix.com/browse')
 
@@ -328,8 +348,9 @@ ipcMain.handle('netflix:extract', async () => {
       return { ok: false, reason: 'not-logged-in', items: [] }
     }
 
-    await netflixExtractorView.webContents.executeJavaScript(NETFLIX_SCROLL_SCRIPT)
+    // 단일 스크립트로 적응형 스크롤·추출을 합쳐 실행
     const titles = await netflixExtractorView.webContents.executeJavaScript(NETFLIX_EXTRACT_SCRIPT)
+    console.log('[Netflix] 스크롤+추출:', ((Date.now() - t0) / 1000).toFixed(1), '초 /', titles?.length, '개')
 
     if (!Array.isArray(titles) || titles.length === 0) {
       return { ok: false, reason: 'no-titles', items: [] }
