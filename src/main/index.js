@@ -7,6 +7,58 @@ const spotifyApi = require('../engine/spotifyApi')
 
 const isDev = process.argv.includes('--dev')
 
+// ─── Netflix 통합 (세션 파티션 + Chrome UA로 로그인 유지) ─────────────────────
+const NETFLIX_PARTITION = 'persist:netflix'
+const NETFLIX_UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+const isNetflixUrl = (url) => /(^https?:\/\/)?(www\.)?netflix\.com/i.test(url || '')
+
+// 백그라운드 추출 스크립트 (NetflixShuffle 프로젝트의 netflixExtractor.js 이식)
+const NETFLIX_SCROLL_SCRIPT = `
+new Promise(async (resolve) => {
+  await new Promise(r => setTimeout(r, 3000));
+  for (let i = 0; i < 15; i++) {
+    window.scrollBy(0, 800);
+    await new Promise(r => setTimeout(r, 600));
+  }
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 1000));
+  resolve();
+});
+`
+const NETFLIX_EXTRACT_SCRIPT = `
+(function() {
+  const cards = document.querySelectorAll(
+    '.title-card, [data-uia="title-card"], .slider-item, [data-uia*="title-card"]'
+  );
+  const seen = new Set();
+  const results = [];
+  cards.forEach(card => {
+    const link = card.querySelector('a[href*="/watch/"], a[href*="jbv="]');
+    if (!link) return;
+    const href = link.href;
+    const idMatch = href.match(/\\/watch\\/(\\d+)/) || href.match(/jbv=(\\d+)/);
+    if (!idMatch) return;
+    const id = idMatch[1];
+    if (seen.has(id)) return;
+    seen.add(id);
+    const img = card.querySelector('img');
+    const title = (img && img.alt)
+                || card.getAttribute('aria-label')
+                || link.getAttribute('aria-label')
+                || '';
+    results.push({
+      id, title: title.trim(),
+      thumbnail: (img && img.src) || '',
+      href
+    });
+  });
+  return results;
+})();
+`
+
 // ─── 메인 윈도우 (SlowBro UI) ───────────────────────────────────────────────
 let mainWindow
 let browserView = null   // 원본 사이트 임베드용
@@ -107,10 +159,28 @@ ipcMain.on('window:set-icon', (event, dataUrl) => {
 
 // URL을 BrowserView에 열기 — bounds는 renderer에서 계산해서 넘겨줌
 ipcMain.handle('browser:open', async (event, { url, bounds }) => {
+  // Netflix는 별도 세션 파티션 + Chrome UA가 필요 → BrowserView 종류가 다르면 재생성
+  const wantNetflix = isNetflixUrl(url)
+  if (browserView && (browserView._isNetflix === true) !== wantNetflix) {
+    mainWindow.removeBrowserView(browserView)
+    browserView.webContents.destroy()
+    browserView = null
+  }
+
   if (!browserView) {
-    browserView = new BrowserView({
-      webPreferences: { nodeIntegration: false, contextIsolation: true },
-    })
+    const webPrefs = wantNetflix
+      ? {
+          session: session.fromPartition(NETFLIX_PARTITION),
+          nodeIntegration: false,
+          contextIsolation: true,
+        }
+      : { nodeIntegration: false, contextIsolation: true }
+
+    browserView = new BrowserView({ webPreferences: webPrefs })
+    browserView._isNetflix = wantNetflix
+
+    if (wantNetflix) browserView.webContents.setUserAgent(NETFLIX_UA)
+
     mainWindow.addBrowserView(browserView)
 
     browserView.webContents.on('did-navigate', (_, navUrl) => {
@@ -225,6 +295,66 @@ ipcMain.handle('browser:injectHighlight', async (_, { selectors }) => {
   `).catch(() => false)
 
   return { ok: true, found }
+})
+
+// ─── Netflix 백그라운드 추출 (숨겨진 BrowserView로 스크롤+추출) ─────────────
+let netflixExtractorView = null
+
+ipcMain.handle('netflix:extract', async () => {
+  if (!mainWindow) return { ok: false, reason: 'no-window', items: [] }
+
+  if (!netflixExtractorView || netflixExtractorView.webContents.isDestroyed()) {
+    netflixExtractorView = new BrowserView({
+      webPreferences: {
+        session: session.fromPartition(NETFLIX_PARTITION),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    })
+    netflixExtractorView.webContents.setUserAgent(NETFLIX_UA)
+  }
+
+  // 화면 밖에 부착해서 lazy-load가 트리거되게 함 (사용자엔 안 보임)
+  mainWindow.addBrowserView(netflixExtractorView)
+  netflixExtractorView.setBounds({ x: -2000, y: 0, width: 1280, height: 800 })
+  netflixExtractorView.setAutoResize({ width: false, height: false })
+
+  try {
+    await netflixExtractorView.webContents.loadURL('https://www.netflix.com/browse')
+
+    const url = await netflixExtractorView.webContents
+      .executeJavaScript('window.location.href').catch(() => '')
+    if (typeof url === 'string' && url.includes('/login')) {
+      return { ok: false, reason: 'not-logged-in', items: [] }
+    }
+
+    await netflixExtractorView.webContents.executeJavaScript(NETFLIX_SCROLL_SCRIPT)
+    const titles = await netflixExtractorView.webContents.executeJavaScript(NETFLIX_EXTRACT_SCRIPT)
+
+    if (!Array.isArray(titles) || titles.length === 0) {
+      return { ok: false, reason: 'no-titles', items: [] }
+    }
+
+    // 영상 카드 UI가 쓰는 표준 모양으로 변환 ({title, subtitle, image, url})
+    const items = titles
+      .filter(t => t && t.title && t.href)
+      .map(t => ({
+        title:    t.title,
+        subtitle: 'Netflix',
+        image:    t.thumbnail || '',
+        url:      t.href,
+      }))
+
+    console.log('[Netflix] 추출 성공:', items.length, '개')
+    return { ok: true, items }
+  } catch (err) {
+    console.error('[Netflix] 추출 실패:', err.message)
+    return { ok: false, reason: 'error', error: err.message, items: [] }
+  } finally {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.removeBrowserView(netflixExtractorView)
+    }
+  }
 })
 
 // ─── Spotify 전체 카탈로그 랜덤 탐색 ─────────────────────────────────────────
