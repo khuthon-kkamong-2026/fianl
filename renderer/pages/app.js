@@ -399,12 +399,19 @@ async function openMusicDiscovery(returnUrl) {
   showScreen('guide')
   stopPreview()   // 다른 곳에서 재생 중이던 미리듣기 정리
 
+  // 상단바 높이를 동적으로 읽어 fixed 오버레이의 top을 맞춤
+  const topbarH = document.querySelector('.topbar')?.offsetHeight || 60
+  document.documentElement.style.setProperty('--dx-topbar-h', topbarH + 'px')
+
   guideContent.innerHTML = `
     <style>
-      .dx-screen { position:relative; min-height:100%; padding:38px 46px;
+      /* 부모 .guide-screen { max-width:640px }을 깨고 화면 가득 채움 */
+      .dx-screen { position:fixed; left:0; right:0; bottom:0;
+        top:var(--dx-topbar-h, 60px); z-index:40;
+        padding:38px 46px; box-sizing:border-box; color:#fff;
         background:radial-gradient(circle at top, #203427, #101010 48%, #060606);
         display:grid; grid-template-columns:1fr 440px 330px; gap:34px;
-        align-items:center; overflow:hidden; box-sizing:border-box; color:#fff }
+        align-items:center; overflow:auto }
       .dx-amb { position:absolute; border-radius:50%; filter:blur(60px);
         opacity:.32; pointer-events:none }
       .dx-amb1 { width:360px; height:360px; background:#1db954; left:12%; top:15% }
