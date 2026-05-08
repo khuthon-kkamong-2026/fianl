@@ -13,9 +13,6 @@ contextBridge.exposeInMainWorld('slowbro', {
     checkSession: (payload) => ipcRenderer.invoke('guard:checkSession', payload),
   },
 
-  // TTS (fire-and-forget)
-  speak: (text) => ipcRenderer.send('tts:speak', text),
-
   // 창 아이콘 설정 (renderer가 canvas로 이모지 렌더링 후 전달)
   setIcon: (dataUrl) => ipcRenderer.send('window:set-icon', dataUrl),
 
