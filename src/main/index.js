@@ -64,10 +64,7 @@ ipcMain.handle('guard:checkSession', async (event, { userId, eventId }) => {
   return { allowed }
 })
 
-// TTS 재생 요청 — Web Speech API를 renderer에서 직접 쓰므로 여기선 로그만
-ipcMain.on('tts:speak', (event, text) => {
-  console.log('[TTS]', text)
-})
+
 
 // 예매 데이터를 데모 서버(localhost:3000)에 전송
 ipcMain.handle('book:submit', async (event, bookingData) => {
