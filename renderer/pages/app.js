@@ -376,8 +376,15 @@ async function runSpotifyDiscovery(id, secret) {
   })), 'Spotify', 'https://open.spotify.com')
 }
 
-// ─── 랜덤 음악 발견 모드 (단일 카드 + 미리듣기 자동 재생) ─────────────────────
-const _disc = { tracks: [], current: null, saved: [] }
+// ─── 랜덤 발견 모드 (단일 카드) — 음악/영상 공용 상태 ───────────────────────
+// 모드별로 tracks와 saved를 분리해 다른 모드의 결과가 섞여 보이지 않게 함.
+const _disc = {
+  tracks:     [],
+  current:    null,
+  savedMusic: [],
+  savedVideo: [],
+  mode:       null,    // 'music' | 'video'
+}
 
 const _DISC_KEYWORDS = [
   'kpop', 'indie', 'rnb', 'dream pop', 'city pop', 'electronic',
@@ -405,6 +412,11 @@ async function openMusicDiscovery(returnUrl) {
   await closeBrowser()
   showScreen('guide')
   stopPreview()   // 다른 곳에서 재생 중이던 미리듣기 정리
+
+  // 다른 모드(영상)의 트랙이 남아있으면 음악 카드에 잘못된 데이터로 노출됨 → 리셋
+  _disc.mode    = 'music'
+  _disc.tracks  = []
+  _disc.current = null
 
   // 상단바 높이를 동적으로 읽어 fixed 오버레이의 top을 맞춤
   const topbarH = document.querySelector('.topbar')?.offsetHeight || 60
@@ -524,7 +536,7 @@ async function openMusicDiscovery(returnUrl) {
   document.getElementById('dx-like')   ?.addEventListener('click', async () => {
     const t = _disc.current
     if (t) {
-      _disc.saved.unshift({
+      _disc.savedMusic.unshift({
         title:    t.title || '',
         subtitle: t.artist?.name || '',
         image:    t.album?.cover_small || t.album?.cover_medium || '',
@@ -593,7 +605,8 @@ async function openVideoDiscovery(items, returnUrl) {
   const topbarH = document.querySelector('.topbar')?.offsetHeight || 60
   document.documentElement.style.setProperty('--dx-topbar-h', topbarH + 'px')
 
-  // 추출된 영상 중 제목·URL이 있는 것만 사용, 셔플
+  // 모드 전환 — 추출된 영상 중 제목·URL이 있는 것만 사용, 셔플
+  _disc.mode    = 'video'
   _disc.tracks  = shuffleArray((items || []).filter(it => it.title && it.url))
   _disc.current = null
 
@@ -719,7 +732,7 @@ async function openVideoDiscovery(items, returnUrl) {
   document.getElementById('dx-like')   ?.addEventListener('click', () => {
     const t = _disc.current
     if (t) {
-      _disc.saved.unshift({
+      _disc.savedVideo.unshift({
         title:    t.title || '',
         subtitle: t.subtitle || '',
         image:    t.image || '',
@@ -770,11 +783,12 @@ function _showRandomVideo() {
 function _renderDiscSaved() {
   const list = document.getElementById('dx-saved-list')
   if (!list) return
-  if (_disc.saved.length === 0) {
+  const items = _disc.mode === 'video' ? _disc.savedVideo : _disc.savedMusic
+  if (!items || items.length === 0) {
     list.innerHTML = '<p>아직 저장한 게 없어요.</p>'
     return
   }
-  list.innerHTML = _disc.saved.map(t => `
+  list.innerHTML = items.map(t => `
     <div class="dx-saved-item">
       <img src="${_escHtml(t.image || '')}" alt="">
       <div>
