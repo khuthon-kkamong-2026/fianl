@@ -233,30 +233,8 @@ urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(ur
 
 // 플랫폼 바로가기 버튼
 document.querySelectorAll('.platform-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // Spotify는 카드 추출 대신 Web API 경로를 타도록 우회
-    // (DOM에는 preview_url이 없어서 인앱 재생이 안 됨)
-    if (btn.dataset.url === 'https://open.spotify.com') {
-      openSpotifyDiscovery()
-      return
-    }
-    navigate(btn.dataset.url)
-  })
+  btn.addEventListener('click', () => navigate(btn.dataset.url))
 })
-
-// 저장된 자격증명이 있으면 바로 탐색, 없으면 폼을 보여줌
-function openSpotifyDiscovery() {
-  const id     = localStorage.getItem('sp_client_id')
-  const secret = localStorage.getItem('sp_client_secret')
-  if (id && secret) {
-    runSpotifyDiscovery(id, secret)
-  } else {
-    const credForm = $('spotify-cred-form')
-    credForm?.classList.remove('hidden')
-    credForm?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    $('sp-client-id')?.focus()
-  }
-}
 
 // ─── 브라우저 네비게이션 버튼 ────────────────────────────────────────────────
 $('bv-back').addEventListener('click',    () => api.browser.back())
@@ -279,6 +257,15 @@ $('bv-slow-mode').addEventListener('click', async () => {
   const btn = $('bv-slow-mode')
   btn.classList.add('loading')
   btn.textContent = '⏳ 추출 중...'
+
+  // Spotify는 별도 카드 화면(랜덤 음악 발견 모드)으로 분기
+  const currentUrl = urlInput.value || bvUrlDisplay.textContent || ''
+  if (/(^https?:\/\/)?(open\.)?spotify\.com/i.test(currentUrl)) {
+    btn.classList.remove('loading')
+    btn.textContent = '👁 찾아보자'
+    await openMusicDiscovery('https://open.spotify.com')
+    return
+  }
 
   // 1순위: 콘텐츠 추출 → 찾으라우저 카드 UI
   const extracted = await api.browser.extractContent()
@@ -380,6 +367,219 @@ async function runSpotifyDiscovery(id, secret) {
     color:      null,
     hidden:     false,
   })), 'Spotify', 'https://open.spotify.com')
+}
+
+// ─── 랜덤 음악 발견 모드 (단일 카드 + 미리듣기 자동 재생) ─────────────────────
+const _disc = { tracks: [], current: null, saved: [] }
+
+const _DISC_KEYWORDS = [
+  'kpop', 'indie', 'rnb', 'dream pop', 'city pop', 'electronic',
+  'jazz', 'lofi', 'rock', 'dance', 'newjeans', 'aespa', 'iu', 'bigbang',
+]
+
+function _escHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]))
+}
+
+async function _fetchRandomTracks() {
+  const kw = _DISC_KEYWORDS[Math.floor(Math.random() * _DISC_KEYWORDS.length)]
+  try {
+    const res  = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(kw)}&limit=50`)
+    const data = await res.json()
+    return shuffleArray((data.data || []).filter(t => t.preview))
+  } catch (err) {
+    console.error('[discovery] fetch failed:', err)
+    return []
+  }
+}
+
+async function openMusicDiscovery(returnUrl) {
+  await closeBrowser()
+  showScreen('guide')
+  stopPreview()   // 다른 곳에서 재생 중이던 미리듣기 정리
+
+  guideContent.innerHTML = `
+    <style>
+      .dx-screen { position:relative; min-height:100%; padding:38px 46px;
+        background:radial-gradient(circle at top, #203427, #101010 48%, #060606);
+        display:grid; grid-template-columns:1fr 440px 330px; gap:34px;
+        align-items:center; overflow:hidden; box-sizing:border-box; color:#fff }
+      .dx-amb { position:absolute; border-radius:50%; filter:blur(60px);
+        opacity:.32; pointer-events:none }
+      .dx-amb1 { width:360px; height:360px; background:#1db954; left:12%; top:15% }
+      .dx-amb2 { width:300px; height:300px; background:#754bff; right:12%; bottom:10% }
+      .dx-intro { position:relative; z-index:1; align-self:start; margin-top:58px }
+      .dx-intro p { color:#1db954; font-weight:900; letter-spacing:3px; margin:0 }
+      .dx-intro h2 { max-width:520px; font-size:54px; line-height:1.05;
+        letter-spacing:-2px; margin:10px 0 18px }
+      .dx-intro span { color:#cfcfcf; font-size:18px; line-height:1.55 }
+      .dx-card { position:relative; z-index:2; width:440px; border-radius:34px;
+        overflow:hidden; background:#181818;
+        box-shadow:0 30px 120px rgba(0,0,0,.65); animation:dx-pop .32s ease }
+      @keyframes dx-pop {
+        from { transform:translateY(20px) scale(.96); opacity:.2 }
+        to   { transform:translateY(0)    scale(1);   opacity:1 }
+      }
+      .dx-cover { position:relative; width:100%; height:440px; background:#2a2a2a }
+      .dx-cover img { width:100%; height:100%; object-fit:cover; display:block }
+      .dx-loading { position:absolute; inset:0; background:rgba(0,0,0,.72);
+        display:none; align-items:center; justify-content:center;
+        font-size:20px; font-weight:900 }
+      .dx-loading.show { display:flex }
+      .dx-info { padding:26px }
+      .dx-tag { margin:0; color:#1db954; font-size:13px; font-weight:900 }
+      .dx-info h3 { margin:10px 0 8px; font-size:38px; line-height:1.05;
+        letter-spacing:-1px; word-break:break-word }
+      .dx-artist { color:#d0d0d0; margin:0 0 18px; font-size:18px }
+      .dx-audio { width:100%; margin:8px 0 22px }
+      .dx-buttons { display:flex; justify-content:space-between }
+      .dx-circle { width:78px; height:78px; border:0; border-radius:50%;
+        background:#fff; font-size:30px; cursor:pointer;
+        transition:transform .15s }
+      .dx-circle:hover { transform:scale(1.06) }
+      .dx-circle:active { transform:scale(.94) }
+      .dx-pass { color:#ff5570 } .dx-shuffle { color:#111 } .dx-like { color:#1db954 }
+      .dx-saved { position:relative; z-index:2; align-self:stretch;
+        background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+        border-radius:28px; padding:22px; backdrop-filter:blur(16px) }
+      .dx-saved-head { display:flex; justify-content:space-between; gap:12px;
+        align-items:center }
+      .dx-saved-head h4 { margin:0; font-size:23px }
+      .dx-back { border:0; border-radius:999px; padding:11px 14px;
+        background:#2a2a2a; color:#fff; cursor:pointer }
+      .dx-saved-list { margin-top:18px; display:flex; flex-direction:column;
+        gap:10px; max-height:calc(100vh - 220px); overflow:auto }
+      .dx-saved-list > p { color:#bfbfbf; font-size:13px }
+      .dx-saved-item { display:grid; grid-template-columns:52px 1fr; gap:12px;
+        align-items:center; padding:10px; background:rgba(0,0,0,.24);
+        border-radius:15px }
+      .dx-saved-item img { width:52px; height:52px; border-radius:11px;
+        object-fit:cover }
+      .dx-saved-item strong { display:block; font-size:14px }
+      .dx-saved-item span { color:#bfbfbf; font-size:12px }
+      @media (max-width: 1100px) {
+        .dx-screen { grid-template-columns:1fr; overflow:auto }
+        .dx-intro { margin-top:0 }
+        .dx-intro h2 { font-size:36px }
+        .dx-card { width:min(440px, 92vw); justify-self:center }
+        .dx-saved { width:100% }
+      }
+    </style>
+    <div class="dx-screen">
+      <div class="dx-amb dx-amb1"></div>
+      <div class="dx-amb dx-amb2"></div>
+      <section class="dx-intro">
+        <p>ALGORITHM OFF</p>
+        <h2>지금부터는 추천순이 아니라 우연순.</h2>
+        <span>실제 음악 preview를 들으며 넘기거나 저장해보세요.</span>
+      </section>
+      <article id="dx-card" class="dx-card">
+        <div class="dx-cover">
+          <img id="dx-img" src="" alt="" />
+          <div id="dx-loading" class="dx-loading show">새로운 곡 찾는 중...</div>
+        </div>
+        <div class="dx-info">
+          <p class="dx-tag">#random #discovery</p>
+          <h3 id="dx-title">Loading...</h3>
+          <p id="dx-artist" class="dx-artist">artist</p>
+          <audio id="dx-audio" class="dx-audio" controls></audio>
+          <div class="dx-buttons">
+            <button id="dx-pass"    class="dx-circle dx-pass"    title="패스">✕</button>
+            <button id="dx-shuffle" class="dx-circle dx-shuffle" title="다시 섞기">🎲</button>
+            <button id="dx-like"    class="dx-circle dx-like"    title="저장">♥</button>
+          </div>
+        </div>
+      </article>
+      <aside class="dx-saved">
+        <div class="dx-saved-head">
+          <h4>내 발견</h4>
+          <button id="dx-back" class="dx-back">← 돌아가기</button>
+        </div>
+        <div id="dx-saved-list" class="dx-saved-list">
+          <p>아직 저장한 곡이 없어요.</p>
+        </div>
+      </aside>
+    </div>`
+
+  document.getElementById('dx-pass')   ?.addEventListener('click', () => _showRandomTrack())
+  document.getElementById('dx-shuffle')?.addEventListener('click', async () => {
+    _disc.tracks = []
+    await _showRandomTrack()
+  })
+  document.getElementById('dx-like')   ?.addEventListener('click', async () => {
+    if (_disc.current) {
+      _disc.saved.unshift(_disc.current)
+      _renderDiscSaved()
+    }
+    await _showRandomTrack()
+  })
+  document.getElementById('dx-back')   ?.addEventListener('click', async () => {
+    document.getElementById('dx-audio')?.pause()
+    if (returnUrl) await openBrowser(returnUrl)
+    else showScreen('home')
+  })
+
+  _renderDiscSaved()
+  await _showRandomTrack()
+}
+
+async function _showRandomTrack() {
+  const loadingEl = document.getElementById('dx-loading')
+  loadingEl?.classList.add('show')
+
+  if (_disc.tracks.length === 0) {
+    _disc.tracks = await _fetchRandomTracks()
+  }
+
+  loadingEl?.classList.remove('show')
+
+  const titleEl  = document.getElementById('dx-title')
+  const artistEl = document.getElementById('dx-artist')
+  const imgEl    = document.getElementById('dx-img')
+  const audioEl  = document.getElementById('dx-audio')
+
+  if (_disc.tracks.length === 0) {
+    if (titleEl)  titleEl.innerText  = '음악을 불러오지 못했어요'
+    if (artistEl) artistEl.innerText = '네트워크 연결을 확인해주세요'
+    return
+  }
+
+  const idx = Math.floor(Math.random() * _disc.tracks.length)
+  const t   = _disc.tracks[idx]
+  _disc.current = t
+
+  if (imgEl)    imgEl.src         = t.album?.cover_big || t.album?.cover_medium || ''
+  if (titleEl)  titleEl.innerText = t.title || ''
+  if (artistEl) artistEl.innerText = t.artist?.name || ''
+  if (audioEl) {
+    audioEl.src = t.preview
+    audioEl.play().catch(() => {})
+  }
+
+  const card = document.getElementById('dx-card')
+  if (card) {
+    card.style.animation = 'none'
+    void card.offsetHeight
+    card.style.animation = 'dx-pop .32s ease'
+  }
+}
+
+function _renderDiscSaved() {
+  const list = document.getElementById('dx-saved-list')
+  if (!list) return
+  if (_disc.saved.length === 0) {
+    list.innerHTML = '<p>아직 저장한 곡이 없어요.</p>'
+    return
+  }
+  list.innerHTML = _disc.saved.map(t => `
+    <div class="dx-saved-item">
+      <img src="${_escHtml(t.album?.cover_small || '')}" alt="">
+      <div>
+        <strong>${_escHtml(t.title)}</strong>
+        <span>${_escHtml(t.artist?.name)}</span>
+      </div>
+    </div>`).join('')
 }
 
 // ─── Spotify 자격증명 폼 핸들러 ───────────────────────────────────────────────
