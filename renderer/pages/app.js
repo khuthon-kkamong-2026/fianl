@@ -659,8 +659,16 @@ function setupTinderCards(siteUrl) {
     let openUrl = null
     if (dir === 'right') {
       console.log('[♥] item:', { title: item?.title, previewUrl: item?.previewUrl, url: item?.url })
-      if (item?.previewUrl) playPreview(item.previewUrl)
-      else if (item?.url)   openUrl = item.url
+      if (item?.previewUrl) {
+        playPreview(item.previewUrl)
+      } else if (item?.url) {
+        openUrl = item.url
+      } else if (item?.title) {
+        // DOM 추출 카드처럼 미리듣기/링크 둘 다 없을 때
+        // → YouTube 검색 결과 페이지로 폴백 (로그인 없이 첫 결과 클릭하면 재생됨)
+        const q = [item.title, item.subtitle].filter(Boolean).join(' ')
+        openUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q)
+      }
     }
 
     setTimeout(async () => {
