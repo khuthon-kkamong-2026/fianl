@@ -19,7 +19,7 @@
 
       <div class="topbar-url-area">
         <input
-          id="url-input"
+          
           class="url-input"
           type="text"
           placeholder="https://www.melon.com  |  https://music.bugs.co.kr  |  https://..."
@@ -52,65 +52,30 @@
       <section id="home-screen" class="home-screen">
 
         <div class="home-hero">
-          <h1 class="home-title">알고리즘을 끄고,<br>진짜를 발견하세요 👁</h1>
+          <h1 class="home-title">컨텐츠 바다 위,<br>스스로 항해를</h1>
           <p class="home-desc">
-            플랫폼 알고리즘은 인기 있는 것만 보여줘요.<br>
-            찾으라우저는 순서를 무력화하고, 숨겨진 콘텐츠를 꺼냅니다.
+            알고리즘에 휩쓸려 사는 당신에게<br>
+            진정 원하는 시간
           </p>
         </div>
 
-        <!-- 플랫폼 바로가기 -->
-        <div class="platform-section">
-          <div class="platform-label">🎵 음악 플랫폼</div>
-          <div class="platform-btns">
-            <button class="platform-btn" data-url="https://www.melon.com/chart/index.htm">
-              <span class="platform-icon">🍈</span>
-              <span class="platform-name">Melon 차트</span>
-            </button>
-            <button class="platform-btn" data-url="https://music.bugs.co.kr/chart">
-              <span class="platform-icon">🐛</span>
-              <span class="platform-name">Bugs 차트</span>
-            </button>
-            <button class="platform-btn" data-url="https://www.genie.co.kr/chart/top200">
-              <span class="platform-icon">🧞</span>
-              <span class="platform-name">Genie 차트</span>
-            </button>
-            <button class="platform-btn" data-url="https://open.spotify.com">
-              <span class="platform-icon">🎧</span>
-              <span class="platform-name">Spotify</span>
-            </button>
-          </div>
-        </div>
+        <!-- 플랫폼 검색 -->
+        <div class="url-area">
+        <input
+          id="url-input"
+          class="url-input"
+          type="text"
+          placeholder= "🌿 항해하기..."
+          spellcheck="false"
+        />
+      </div>
 
-        <div class="platform-section">
-          <div class="platform-label">📺 영상 플랫폼</div>
-          <div class="platform-btns">
-            <button class="platform-btn" data-url="https://www.youtube.com">
-              <span class="platform-icon">▶️</span>
-              <span class="platform-name">YouTube</span>
-            </button>
-            <button class="platform-btn" data-url="http://localhost:3001">
-              <span class="platform-icon">🎬</span>
-              <span class="platform-name">StreamHub<br><small>데모</small></span>
-            </button>
-          </div>
-        </div>
+      <p class="guide-search">
+            url 입력
+      </p>
+        
 
-        <!-- Spotify 자격증명 입력 폼 (숨김, JS로 제어) -->
-        <div id="spotify-cred-form" class="spotify-cred-form hidden">
-          <p class="spotify-cred-desc">
-            Spotify Developer 앱의 Client ID와 Secret을 입력하세요.<br>
-            <a id="spotify-dev-link" href="#" style="color:#1DB954;font-size:0.85em">
-              👉 developer.spotify.com/dashboard 에서 발급
-            </a>
-          </p>
-          <input id="sp-client-id"     class="sp-input" type="text"     placeholder="Client ID" />
-          <input id="sp-client-secret" class="sp-input" type="password" placeholder="Client Secret" />
-          <div style="display:flex;gap:8px;margin-top:8px;">
-            <button id="sp-confirm" class="sp-btn sp-btn--primary">탐색 시작</button>
-            <button id="sp-cancel"  class="sp-btn">취소</button>
-          </div>
-        </div>
+
 
       </section>
 

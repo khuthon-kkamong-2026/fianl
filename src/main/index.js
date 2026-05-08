@@ -65,6 +65,7 @@ ipcMain.handle('guard:checkSession', async (event, { userId, eventId }) => {
 })
 
 
+
 // 예매 데이터를 데모 서버(localhost:3000)에 전송
 ipcMain.handle('book:submit', async (event, bookingData) => {
   return new Promise((resolve) => {
