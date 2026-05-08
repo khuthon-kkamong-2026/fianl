@@ -26,6 +26,9 @@ contextBridge.exposeInMainWorld('slowbro', {
   spotifyDiscover: (clientId, clientSecret) =>
     ipcRenderer.invoke('spotify:discover', { clientId, clientSecret }),
 
+  // Netflix 백그라운드 추출 (로그인된 세션 공유)
+  netflixExtract: () => ipcRenderer.invoke('netflix:extract'),
+
   // 앱 버전
   version: process.env.npm_package_version ?? '0.1.0',
 

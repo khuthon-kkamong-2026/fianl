@@ -267,6 +267,26 @@ $('bv-slow-mode').addEventListener('click', async () => {
     return
   }
 
+  // Netflix는 백그라운드 추출(로그인된 세션 공유) → 영상 카드 UI로 분기
+  if (/(^https?:\/\/)?(www\.)?netflix\.com/i.test(currentUrl)) {
+    btn.textContent = '⏳ 추출 중... (10~30초)'
+    const result = await api.netflixExtract()
+    btn.classList.remove('loading')
+    btn.textContent = '👁 찾아보자'
+
+    if (!result.ok) {
+      const msg =
+        result.reason === 'not-logged-in' ? '먼저 넷플릭스에 로그인해주세요.'
+        : result.reason === 'no-titles'   ? '추출 결과가 없어요. 페이지를 스크롤하거나 잠시 후 다시 시도해주세요.'
+        : '추출 실패: ' + (result.error || result.reason)
+      alert(msg)
+      return
+    }
+
+    await openVideoDiscovery(result.items, currentUrl)
+    return
+  }
+
   // 1순위: 콘텐츠 추출 → 찾으라우저 카드 UI
   const extracted = await api.browser.extractContent()
 
