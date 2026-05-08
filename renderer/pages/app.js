@@ -233,8 +233,30 @@ urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') navigate(ur
 
 // 플랫폼 바로가기 버튼
 document.querySelectorAll('.platform-btn').forEach(btn => {
-  btn.addEventListener('click', () => navigate(btn.dataset.url))
+  btn.addEventListener('click', () => {
+    // Spotify는 카드 추출 대신 Web API 경로를 타도록 우회
+    // (DOM에는 preview_url이 없어서 인앱 재생이 안 됨)
+    if (btn.dataset.url === 'https://open.spotify.com') {
+      openSpotifyDiscovery()
+      return
+    }
+    navigate(btn.dataset.url)
+  })
 })
+
+// 저장된 자격증명이 있으면 바로 탐색, 없으면 폼을 보여줌
+function openSpotifyDiscovery() {
+  const id     = localStorage.getItem('sp_client_id')
+  const secret = localStorage.getItem('sp_client_secret')
+  if (id && secret) {
+    runSpotifyDiscovery(id, secret)
+  } else {
+    const credForm = $('spotify-cred-form')
+    credForm?.classList.remove('hidden')
+    credForm?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    $('sp-client-id')?.focus()
+  }
+}
 
 // ─── 브라우저 네비게이션 버튼 ────────────────────────────────────────────────
 $('bv-back').addEventListener('click',    () => api.browser.back())
@@ -300,7 +322,48 @@ function applyFontLevel() {
   if (state.fontLevel === 2) document.body.classList.add('font-xxl')
 }
 
-// ─── Spotify 자격증명 폼 (홈 화면에서 직접 접근 시 사용) ─────────────────────
+// ─── Spotify 탐색 실행 (자격증명으로 API 호출 → 카드 렌더링) ─────────────────
+async function runSpotifyDiscovery(id, secret) {
+  const credForm = $('spotify-cred-form')
+  credForm?.classList.add('hidden')
+
+  showScreen('guide')
+  guideContent.innerHTML = `
+    <div style="text-align:center;padding:60px 20px;color:#fff">
+      <div style="font-size:2.5em;margin-bottom:16px">🎵</div>
+      <div style="font-size:1.1em;font-weight:700;color:#1DB954;margin-bottom:8px">Spotify 카탈로그 탐색 중...</div>
+      <div style="font-size:0.85em;color:#888">전체 DB에서 랜덤으로 가져오는 중이에요</div>
+    </div>`
+
+  const result = await api.spotifyDiscover(id, secret)
+  if (!result.ok) {
+    guideContent.innerHTML = `
+      <div style="padding:24px;color:#fff">
+        <p style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ 연결 실패</p>
+        <p style="font-size:0.85em;color:#aaa;margin-bottom:12px">${result.error}</p>
+        <button id="link-sp-reset" style="background:none;border:none;color:#1DB954;font-size:0.85em;cursor:pointer">🔑 다시 입력하기</button>
+      </div>`
+    document.getElementById('link-sp-reset')?.addEventListener('click', () => {
+      localStorage.removeItem('sp_client_id')
+      localStorage.removeItem('sp_client_secret')
+      showScreen('home')
+      credForm?.classList.remove('hidden')
+    })
+    return
+  }
+
+  renderDiscoveryCards(result.items.map(i => ({
+    title:      i.title,
+    subtitle:   i.artist,
+    image:      i.imageUrl,
+    url:        i.externalUrl || null,
+    previewUrl: i.previewUrl || null,
+    color:      null,
+    hidden:     false,
+  })), 'Spotify', 'https://open.spotify.com')
+}
+
+// ─── Spotify 자격증명 폼 핸들러 ───────────────────────────────────────────────
 ;(function initSpotifyCred() {
   const credForm = $('spotify-cred-form')
   const devLink  = $('spotify-dev-link')
@@ -318,42 +381,7 @@ function applyFontLevel() {
     if (!id || !secret) return
     localStorage.setItem('sp_client_id',     id)
     localStorage.setItem('sp_client_secret', secret)
-    credForm?.classList.add('hidden')
-
-    showScreen('guide')
-    guideContent.innerHTML = `
-      <div style="text-align:center;padding:60px 20px;color:#fff">
-        <div style="font-size:2.5em;margin-bottom:16px">🎵</div>
-        <div style="font-size:1.1em;font-weight:700;color:#1DB954;margin-bottom:8px">Spotify 카탈로그 탐색 중...</div>
-        <div style="font-size:0.85em;color:#888">전체 DB에서 랜덤으로 가져오는 중이에요</div>
-      </div>`
-
-    const result = await api.spotifyDiscover(id, secret)
-    if (!result.ok) {
-      guideContent.innerHTML = `
-        <div style="padding:24px;color:#fff">
-          <p style="color:#ff4444;font-weight:700;margin-bottom:8px">❌ 연결 실패</p>
-          <p style="font-size:0.85em;color:#aaa;margin-bottom:12px">${result.error}</p>
-          <button id="link-sp-reset" style="background:none;border:none;color:#1DB954;font-size:0.85em;cursor:pointer">🔑 다시 입력하기</button>
-        </div>`
-      document.getElementById('link-sp-reset')?.addEventListener('click', () => {
-        localStorage.removeItem('sp_client_id')
-        localStorage.removeItem('sp_client_secret')
-        showScreen('home')
-        credForm?.classList.remove('hidden')
-      })
-      return
-    }
-
-    renderDiscoveryCards(result.items.map(i => ({
-      title:      i.title,
-      subtitle:   i.artist,
-      image:      i.imageUrl,
-      url:        i.externalUrl || null,
-      previewUrl: i.previewUrl || null,
-      color:      null,
-      hidden:     false,
-    })), 'Spotify', 'https://open.spotify.com')
+    runSpotifyDiscovery(id, secret)
   })
 })()
 
@@ -611,6 +639,7 @@ function setupTinderCards(siteUrl) {
     // 하트(오른쪽) → 미리듣기(30초 MP3) 인앱 재생, 없으면 페이지 열기 폴백
     let openUrl = null
     if (dir === 'right') {
+      console.log('[♥] item:', { title: item?.title, previewUrl: item?.previewUrl, url: item?.url })
       if (item?.previewUrl) playPreview(item.previewUrl)
       else if (item?.url)   openUrl = item.url
     }
