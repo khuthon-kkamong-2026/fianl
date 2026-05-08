@@ -126,11 +126,26 @@ const api = window.slowbro
 
 // ─── 상태 ────────────────────────────────────────────────────────────────────
 const state = {
-  ttsEnabled:     true,
   fontLevel:      0,
   browserOpen:    false,   // BrowserView 열려 있는지
   discoveryItems: [],
   currentCardIdx: 0,       // 틴더 카드 현재 인덱스
+}
+
+// ─── Spotify 미리듣기 오디오 (단일 인스턴스) ─────────────────────────────────
+let _previewAudio = null
+function playPreview(url) {
+  stopPreview()
+  if (!url) return
+  _previewAudio = new Audio(url)
+  _previewAudio.play().catch(() => {})
+}
+function stopPreview() {
+  if (_previewAudio) {
+    _previewAudio.pause()
+    _previewAudio.src = ''
+    _previewAudio = null
+  }
 }
 
 // ─── DOM 참조 ─────────────────────────────────────────────────────────────────
@@ -259,7 +274,6 @@ $('bv-slow-mode').addEventListener('click', async () => {
   if (fetchResult?.ok) {
     btn.classList.remove('loading')
     btn.textContent = '🔀 다시 섞기'
-    speak('찾아보자 모드예요. 알고리즘 추천을 차단하고 랜덤으로 바꿨어요.')
     return
   }
 
@@ -268,18 +282,12 @@ $('bv-slow-mode').addEventListener('click', async () => {
   btn.classList.remove('loading')
   if (!ok || count < 2) {
     btn.textContent = '👁 찾아보자'
-    speak('콘텐츠를 찾지 못했어요. 페이지가 완전히 로드된 후 다시 눌러주세요.')
     return
   }
   btn.textContent = '🔀 다시 섞기'
-  speak(`${count}개 콘텐츠를 랜덤으로 섞었어요.`)
 })
 
 // ─── 접근성 버튼 ─────────────────────────────────────────────────────────────
-$('btn-tts-toggle').addEventListener('click', () => {
-  state.ttsEnabled = !state.ttsEnabled
-  $('btn-tts-toggle').textContent = state.ttsEnabled ? '🔊' : '🔇'
-})
 $('btn-font-up').addEventListener('click', () => {
   if (state.fontLevel < 2) { state.fontLevel++; applyFontLevel() }
 })
@@ -290,16 +298,6 @@ function applyFontLevel() {
   document.body.classList.remove('font-xl', 'font-xxl')
   if (state.fontLevel === 1) document.body.classList.add('font-xl')
   if (state.fontLevel === 2) document.body.classList.add('font-xxl')
-}
-
-// ─── TTS ──────────────────────────────────────────────────────────────────────
-function speak(text) {
-  if (!state.ttsEnabled) return
-  window.speechSynthesis.cancel()
-  const utter = new SpeechSynthesisUtterance(text)
-  utter.lang = 'ko-KR'; utter.rate = 0.9
-  window.speechSynthesis.speak(utter)
-  api.speak(text)
 }
 
 // ─── Spotify 자격증명 폼 (홈 화면에서 직접 접근 시 사용) ─────────────────────
@@ -348,12 +346,13 @@ function speak(text) {
     }
 
     renderDiscoveryCards(result.items.map(i => ({
-      title:    i.title,
-      subtitle: i.artist,
-      image:    i.imageUrl,
-      url:      i.externalUrl || null,
-      color:    null,
-      hidden:   false,
+      title:      i.title,
+      subtitle:   i.artist,
+      image:      i.imageUrl,
+      url:        i.externalUrl || null,
+      previewUrl: i.previewUrl || null,
+      color:      null,
+      hidden:     false,
     })), 'Spotify', 'https://open.spotify.com')
   })
 })()
@@ -543,7 +542,6 @@ function renderDiscoveryCards(rawItems, siteName = '', siteUrl = '') {
     </div>`
 
   setupTinderCards(siteUrl)
-  speak(`${total}개 콘텐츠를 알고리즘 없이 탐색해요.`)
 }
 
 // ─── 틴더 인터랙션 ──────────────────────────────────────────────────────────
@@ -610,11 +608,17 @@ function setupTinderCards(siteUrl) {
     topCard.removeAttribute('id')   // 중복 스와이프 방지
     topCard.classList.add(dir === 'right' ? 'td-swipe-r' : 'td-swipe-l')
 
-    const navUrl = dir === 'right' && item?.url ? item.url : null
+    // 하트(오른쪽) → 미리듣기(30초 MP3) 인앱 재생, 없으면 페이지 열기 폴백
+    let openUrl = null
+    if (dir === 'right') {
+      if (item?.previewUrl) playPreview(item.previewUrl)
+      else if (item?.url)   openUrl = item.url
+    }
+
     setTimeout(async () => {
       state.currentCardIdx++
       renderStack()
-      if (navUrl) await openBrowser(navUrl)
+      if (openUrl) await openBrowser(openUrl)
     }, 360)
   }
 
@@ -667,11 +671,13 @@ function setupTinderCards(siteUrl) {
   document.getElementById('td-skip')?.addEventListener('click', () => doSwipe('left'))
   document.getElementById('td-goto')?.addEventListener('click', () => doSwipe('right'))
   document.getElementById('td-reshuffle')?.addEventListener('click', () => {
+    stopPreview()
     state.discoveryItems = shuffleArray(state.discoveryItems)
     state.currentCardIdx = 0
     renderStack()
   })
   document.getElementById('td-back')?.addEventListener('click', async () => {
+    stopPreview()
     siteUrl ? await openBrowser(siteUrl) : showScreen('home')
   })
 }
