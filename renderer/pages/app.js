@@ -273,6 +273,13 @@ $('bv-slow-mode').addEventListener('click', async () => {
   if (extracted?.ok && extracted.items.length > 0) {
     btn.classList.remove('loading')
     btn.textContent = '👁 찾아보자'
+
+    // YouTube는 단일 카드 UI(영상 모드)로 분기
+    if (/youtube\.com|youtu\.be/i.test(currentUrl)) {
+      await openVideoDiscovery(extracted.items, currentUrl)
+      return
+    }
+
     await closeBrowser()
     renderDiscoveryCards(extracted.items, extracted.siteName, extracted.siteUrl)
     return
@@ -515,8 +522,13 @@ async function openMusicDiscovery(returnUrl) {
     await _showRandomTrack()
   })
   document.getElementById('dx-like')   ?.addEventListener('click', async () => {
-    if (_disc.current) {
-      _disc.saved.unshift(_disc.current)
+    const t = _disc.current
+    if (t) {
+      _disc.saved.unshift({
+        title:    t.title || '',
+        subtitle: t.artist?.name || '',
+        image:    t.album?.cover_small || t.album?.cover_medium || '',
+      })
       _renderDiscSaved()
     }
     await _showRandomTrack()
@@ -572,19 +584,202 @@ async function _showRandomTrack() {
   }
 }
 
+// ─── 영상 발견 모드 (YouTube 등 DOM 추출 결과 → 단일 카드 + 영상 보기 버튼) ─
+async function openVideoDiscovery(items, returnUrl) {
+  await closeBrowser()
+  showScreen('guide')
+  stopPreview()
+
+  const topbarH = document.querySelector('.topbar')?.offsetHeight || 60
+  document.documentElement.style.setProperty('--dx-topbar-h', topbarH + 'px')
+
+  // 추출된 영상 중 제목·URL이 있는 것만 사용, 셔플
+  _disc.tracks  = shuffleArray((items || []).filter(it => it.title && it.url))
+  _disc.current = null
+
+  guideContent.innerHTML = `
+    <style>
+      .dx-screen { position:fixed; left:0; right:0; bottom:0;
+        top:var(--dx-topbar-h, 60px); z-index:40;
+        padding:38px 46px; box-sizing:border-box; color:#fff;
+        background:radial-gradient(circle at top, #1a2733, #101010 48%, #060606);
+        display:grid; grid-template-columns:1fr 480px 330px; gap:34px;
+        align-items:center; overflow:auto }
+      .dx-amb { position:absolute; border-radius:50%; filter:blur(60px);
+        opacity:.32; pointer-events:none }
+      .dx-amb1 { width:360px; height:360px; background:#ff5570; left:12%; top:15% }
+      .dx-amb2 { width:300px; height:300px; background:#754bff; right:12%; bottom:10% }
+      .dx-intro { position:relative; z-index:1; align-self:start; margin-top:58px }
+      .dx-intro p { color:#ff5570; font-weight:900; letter-spacing:3px; margin:0 }
+      .dx-intro h2 { max-width:520px; font-size:54px; line-height:1.05;
+        letter-spacing:-2px; margin:10px 0 18px }
+      .dx-intro span { color:#cfcfcf; font-size:18px; line-height:1.55 }
+      .dx-card { position:relative; z-index:2; width:480px; border-radius:34px;
+        overflow:hidden; background:#181818;
+        box-shadow:0 30px 120px rgba(0,0,0,.65); animation:dx-pop .32s ease }
+      @keyframes dx-pop {
+        from { transform:translateY(20px) scale(.96); opacity:.2 }
+        to   { transform:translateY(0)    scale(1);   opacity:1 }
+      }
+      .dx-cover { position:relative; width:100%; aspect-ratio:16/9;
+        background:#2a2a2a }
+      .dx-cover img { width:100%; height:100%; object-fit:cover; display:block }
+      .dx-loading { position:absolute; inset:0; background:rgba(0,0,0,.72);
+        display:none; align-items:center; justify-content:center;
+        font-size:20px; font-weight:900 }
+      .dx-loading.show { display:flex }
+      .dx-info { padding:26px }
+      .dx-tag { margin:0; color:#ff5570; font-size:13px; font-weight:900 }
+      .dx-info h3 { margin:10px 0 8px; font-size:30px; line-height:1.15;
+        letter-spacing:-.5px; word-break:break-word }
+      .dx-artist { color:#d0d0d0; margin:0 0 18px; font-size:16px }
+      .dx-play { display:block; width:100%; padding:14px 0; margin:8px 0 22px;
+        border:0; border-radius:14px; background:#ff5570; color:#fff;
+        font-size:18px; font-weight:900; cursor:pointer;
+        transition:transform .15s, box-shadow .15s;
+        box-shadow:0 8px 24px rgba(255,85,112,.35) }
+      .dx-play:hover { transform:translateY(-2px);
+        box-shadow:0 12px 32px rgba(255,85,112,.5) }
+      .dx-play:active { transform:scale(.97) }
+      .dx-buttons { display:flex; justify-content:space-between }
+      .dx-circle { width:78px; height:78px; border:0; border-radius:50%;
+        background:#fff; font-size:30px; cursor:pointer;
+        transition:transform .15s }
+      .dx-circle:hover { transform:scale(1.06) }
+      .dx-circle:active { transform:scale(.94) }
+      .dx-pass { color:#ff5570 } .dx-shuffle { color:#111 } .dx-like { color:#ff5570 }
+      .dx-saved { position:relative; z-index:2; align-self:stretch;
+        background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
+        border-radius:28px; padding:22px; backdrop-filter:blur(16px) }
+      .dx-saved-head { display:flex; justify-content:space-between; gap:12px;
+        align-items:center }
+      .dx-saved-head h4 { margin:0; font-size:23px }
+      .dx-back { border:0; border-radius:999px; padding:11px 14px;
+        background:#2a2a2a; color:#fff; cursor:pointer }
+      .dx-saved-list { margin-top:18px; display:flex; flex-direction:column;
+        gap:10px; max-height:calc(100vh - 220px); overflow:auto }
+      .dx-saved-list > p { color:#bfbfbf; font-size:13px }
+      .dx-saved-item { display:grid; grid-template-columns:64px 1fr; gap:12px;
+        align-items:center; padding:10px; background:rgba(0,0,0,.24);
+        border-radius:15px }
+      .dx-saved-item img { width:64px; height:36px; border-radius:6px;
+        object-fit:cover }
+      .dx-saved-item strong { display:block; font-size:14px;
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+      .dx-saved-item span { color:#bfbfbf; font-size:12px }
+      @media (max-width: 1100px) {
+        .dx-screen { grid-template-columns:1fr; overflow:auto }
+        .dx-intro { margin-top:0 }
+        .dx-intro h2 { font-size:36px }
+        .dx-card { width:min(480px, 92vw); justify-self:center }
+        .dx-saved { width:100% }
+      }
+    </style>
+    <div class="dx-screen">
+      <div class="dx-amb dx-amb1"></div>
+      <div class="dx-amb dx-amb2"></div>
+      <section class="dx-intro">
+        <p>ALGORITHM OFF</p>
+        <h2>지금부터는 추천순이 아니라 우연순.</h2>
+        <span>알고리즘이 가린 영상을 한 편씩 만나보세요.</span>
+      </section>
+      <article id="dx-card" class="dx-card">
+        <div class="dx-cover">
+          <img id="dx-img" src="" alt="" />
+          <div id="dx-loading" class="dx-loading">새로운 영상 찾는 중...</div>
+        </div>
+        <div class="dx-info">
+          <p class="dx-tag">#random #discovery</p>
+          <h3 id="dx-title">Loading...</h3>
+          <p id="dx-artist" class="dx-artist">channel</p>
+          <button id="dx-play" class="dx-play">▶ 영상 보기</button>
+          <div class="dx-buttons">
+            <button id="dx-pass"    class="dx-circle dx-pass"    title="패스">✕</button>
+            <button id="dx-shuffle" class="dx-circle dx-shuffle" title="다시 섞기">🎲</button>
+            <button id="dx-like"    class="dx-circle dx-like"    title="저장">♥</button>
+          </div>
+        </div>
+      </article>
+      <aside class="dx-saved">
+        <div class="dx-saved-head">
+          <h4>내 발견</h4>
+          <button id="dx-back" class="dx-back">← 돌아가기</button>
+        </div>
+        <div id="dx-saved-list" class="dx-saved-list">
+          <p>아직 저장한 게 없어요.</p>
+        </div>
+      </aside>
+    </div>`
+
+  document.getElementById('dx-pass')   ?.addEventListener('click', () => _showRandomVideo())
+  document.getElementById('dx-shuffle')?.addEventListener('click', () => {
+    _disc.tracks = shuffleArray(_disc.tracks)
+    _showRandomVideo()
+  })
+  document.getElementById('dx-like')   ?.addEventListener('click', () => {
+    const t = _disc.current
+    if (t) {
+      _disc.saved.unshift({
+        title:    t.title || '',
+        subtitle: t.subtitle || '',
+        image:    t.image || '',
+      })
+      _renderDiscSaved()
+    }
+    _showRandomVideo()
+  })
+  document.getElementById('dx-play')   ?.addEventListener('click', async () => {
+    if (_disc.current?.url) await openBrowser(_disc.current.url)
+  })
+  document.getElementById('dx-back')   ?.addEventListener('click', async () => {
+    if (returnUrl) await openBrowser(returnUrl)
+    else showScreen('home')
+  })
+
+  _renderDiscSaved()
+  _showRandomVideo()
+}
+
+function _showRandomVideo() {
+  const titleEl  = document.getElementById('dx-title')
+  const artistEl = document.getElementById('dx-artist')
+  const imgEl    = document.getElementById('dx-img')
+
+  if (!_disc.tracks || _disc.tracks.length === 0) {
+    if (titleEl)  titleEl.innerText  = '영상을 불러오지 못했어요'
+    if (artistEl) artistEl.innerText = '페이지가 완전히 로드된 뒤 다시 시도해주세요'
+    return
+  }
+
+  const idx = Math.floor(Math.random() * _disc.tracks.length)
+  const t   = _disc.tracks[idx]
+  _disc.current = t
+
+  if (imgEl)    imgEl.src         = t.image || ''
+  if (titleEl)  titleEl.innerText = t.title || ''
+  if (artistEl) artistEl.innerText = t.subtitle || ''
+
+  const card = document.getElementById('dx-card')
+  if (card) {
+    card.style.animation = 'none'
+    void card.offsetHeight
+    card.style.animation = 'dx-pop .32s ease'
+  }
+}
+
 function _renderDiscSaved() {
   const list = document.getElementById('dx-saved-list')
   if (!list) return
   if (_disc.saved.length === 0) {
-    list.innerHTML = '<p>아직 저장한 곡이 없어요.</p>'
+    list.innerHTML = '<p>아직 저장한 게 없어요.</p>'
     return
   }
   list.innerHTML = _disc.saved.map(t => `
     <div class="dx-saved-item">
-      <img src="${_escHtml(t.album?.cover_small || '')}" alt="">
+      <img src="${_escHtml(t.image || '')}" alt="">
       <div>
         <strong>${_escHtml(t.title)}</strong>
-        <span>${_escHtml(t.artist?.name)}</span>
+        <span>${_escHtml(t.subtitle || '')}</span>
       </div>
     </div>`).join('')
 }
