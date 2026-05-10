@@ -1,92 +1,82 @@
-# 🐢 SlowBro — 디지털 완충 브라우저
+# 👁 찾으라우저
 
-> 빠른 디지털 환경과 사람 사이를 연결하는 중간 레이어.
-> 느린 게 결함이 아닌, **모두를 위한 속도**로.
+> 알고리즘이 숨긴 콘텐츠를 꺼내, 내가 직접 발견하는 브라우저
 
 ---
 
-## 빠른 시작
+## 소개
 
-```bash
-cd slowbro
-npm install
-npm start          # 개발 실행
-npm run dev        # DevTools 열어서 실행
-```
+플랫폼 알고리즘은 인기 있는 콘텐츠만 반복해서 보여줍니다.  
+**찾으라우저**는 알고리즘의 순서를 무력화하고, 숨겨진 콘텐츠를 랜덤으로 꺼내주는 데스크톱 브라우저입니다.
+
+---
+
+## 시연 플랫폼
+
+대중문화의 구조적 문제가 가장 잘 드러나는 세 플랫폼을 바탕으로 시연합니다.
+
+| 플랫폼 | 동작 |
+|---|---|
+| 🎧 Spotify | 알고리즘 추천 없이 전체 카탈로그에서 랜덤 탐색 |
+| ▶️ YouTube | 홈 피드 알고리즘 순서를 랜덤으로 섞어 표시 |
+| 🎬 Netflix | 플랫폼이 밀어주는 순서 없이 랜덤 콘텐츠 탐색 |
+
+---
+
+## 주요 기능
+
+- **찾아보자** 버튼 클릭 → 알고리즘과 무관하게 랜덤 콘텐츠 카드 표시
+- **✕** 마음에 들지 않으면 넘기기
+- **♥** 마음에 들면 해당 콘텐츠로 바로 이동
+- **🔀 다시 섞기** 순서를 다시 랜덤으로 변경
+
+---
+
+## 기술 스택
+
+| 기술 | 역할 |
+|---|---|
+| **Electron** | 데스크톱 앱 구성, BrowserView로 실제 사이트 임베드 |
+| **Cheerio** | 사이트 HTML 파싱 및 콘텐츠 추출 |
+| **JavaScript** | DOM 직접 조작으로 알고리즘 순서 무력화 |
+
+### 핵심 구현
+
+- **Spotify Web API** — Client Credentials Flow로 로그인 없이 전체 카탈로그 랜덤 탐색
+- **fetch / XHR 인터셉션** — 사이트 네트워크 응답을 가로채 JSON 배열을 Fisher-Yates 셔플 후 재반환
+- **DOM 스크래핑** — Melon, Bugs, Genie, YouTube, Spotify 등 사이트별 CSS 셀렉터로 콘텐츠 추출
 
 ---
 
 ## 프로젝트 구조
 
 ```
-slowbro/
 ├── src/
-│   ├── main/
-│   │   └── index.js          # Electron 메인 프로세스 (창 생성, IPC, 광고 차단)
-│   ├── preload/
-│   │   └── index.js          # contextBridge API 노출 (window.slowbro)
+│   ├── main/index.js        # Electron 메인 프로세스 (IPC, BrowserView)
+│   ├── preload/index.js     # contextBridge API 노출
 │   ├── engine/
-│   │   └── pageParser.js     # 사이트 파싱 엔진 (Cheerio 기반)
-│   └── guard/
-│       └── antiAbuse.js      # 악용 방지 (클릭 속도 감지, 세션 제한)
+│   │   ├── pageParser.js    # Cheerio 기반 HTML 파서
+│   │   └── spotifyApi.js    # Spotify Web API 연동
+│   └── guard/antiAbuse.js   # 악용 방지
 │
-├── renderer/
-│   ├── index.html            # 메인 UI 진입점
-│   ├── styles/
-│   │   └── main.css          # 고령층 최적화 스타일
-│   └── pages/
-│       └── app.js            # 렌더러 앱 로직 (단계별 가이드, TTS)
-│
-└── mock-sites/
-    ├── interpark/index.html  # 야구 티켓 Mock 페이지
-    └── korail/index.html     # KTX 예매 Mock 페이지
+└── renderer/
+    ├── index.html           # 메인 UI
+    ├── styles/main.css
+    └── pages/app.js         # 틴더 카드 UI, 알고리즘 무력화 로직
 ```
 
 ---
 
-## 데모 URL
+## 실행 방법
 
-브라우저 상단 입력창에 입력:
-
-| URL | 설명 |
-|-----|------|
-| `mock://interpark/baseball` | 야구 티켓 예매 시뮬레이션 |
-| `mock://korail/ktx` | KTX 예매 시뮬레이션 |
+```bash
+npm install
+npm start
+```
 
 ---
 
-## 핵심 설계 원칙
+## 만든 이유
 
-### 1. 대체가 아닌 번역
-기존 인터파크·코레일 서비스를 대체하지 않음.
-원본 페이지를 파싱해 **핵심 요소만 추출 → 재구성**하는 중간 레이어.
-
-### 2. 악용 방지
-- **클릭 속도 감지**: 250ms 이하 연속 클릭 3회 → 경고 & 차단
-- **1인 1회 제한**: 동일 이벤트 중복 시도 차단
-- **사람이 직접 제출**: 자동 제출 없음. 모든 스텝을 사람이 거침
-- **나이 인증 연동** (실제 배포시): PASS SDK / 정부24 60세+ 확인
-
-### 3. 접근성 우선
-- 기본 글씨 18px, 최대 26px까지 단계 조절
-- 모든 주요 안내에 TTS (한국어 음성 합성)
-- 하단 고정 "뒤로 / 처음으로 / 도움 요청" 버튼
-- 한 화면에 선택지 최대 4개, 버튼 최소 크기 52px
-
----
-
-## 기술 스택
-
-| 레이어 | 기술 |
-|--------|------|
-| 브라우저 셸 | Electron 28 + Chromium |
-| 메인 프로세스 | Node.js (IPC, 세션 관리, 광고 차단) |
-| 보안 경계 | contextIsolation + contextBridge |
-| 페이지 파싱 | Cheerio (서버 사이드 jQuery) |
-| 렌더러 UI | Vanilla JS + CSS (번들러 없음, 빠른 개발) |
-| 음성 안내 | Web Speech API (SpeechSynthesisUtterance) |
-| 악용 방지 | 자체 구현 (클릭 속도, 세션 맵) |
-
----
-
-
+추천 알고리즘은 편리하지만, 우리가 보는 것을 점점 좁게 만듭니다.  
+찾으라우저는 그 경계 밖의 콘텐츠를 발견하는 경험을 돌려줍니다.
